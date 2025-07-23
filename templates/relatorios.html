@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+
+{% block title %}Central de Relatórios{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">Central de Relatórios</h1>
+<p class="text-muted mb-5">Selecione uma das opções abaixo para gerar um relatório.</p>
+
+<div class="row">
+    <!-- Coluna de Relatórios de Estoque -->
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-boxes"></i> Relatórios de Estoque
+            </div>
+            <div class="list-group list-group-flush">
+                <a href="#" class="list-group-item list-group-item-action">
+                    <strong>Inventário Completo</strong>
+                    <small class="d-block text-muted">Lista todos os produtos, quantidades e valores.</small>
+                </a>
+                <a href="#" class="list-group-item list-group-item-action list-group-item-warning">
+                    <strong>Produtos com Estoque Baixo</strong>
+                    <small class="d-block text-muted">Mostra todos os produtos abaixo do nível mínimo definido.</small>
+                </a>
+                <a href="#" class="list-group-item list-group-item-action">
+                    <strong>Histórico de Movimentações</strong>
+                    <small class="d-block text-muted">Detalha todas as entradas e saídas de estoque por período.</small>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Coluna de Relatórios Financeiros -->
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-dollar-sign"></i> Relatórios Financeiros
+            </div>
+            <div class="list-group list-group-flush">
+                <a href="#" class="list-group-item list-group-item-action">
+                    <strong>Contas a Pagar (Pendentes)</strong>
+                    <small class="d-block text-muted">Exibe todas as contas com status 'pendente', ordenadas por vencimento.</small>
+                </a>
+                <a href="#" class="list-group-item list-group-item-action">
+                    <strong>Contas Pagas</strong>
+                    <small class="d-block text-muted">Filtra contas pagas por um período específico.</small>
+                </a>
+                <a href="#" class="list-group-item list-group-item-action">
+                    <strong>Despesas por Fornecedor</strong>
+                    <small class="d-block text-muted">Agrupa o total de despesas para cada fornecedor.</small>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Para os ícones funcionarem, adicione o Font Awesome no seu base.html -->
+<!-- Exemplo: <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"> -->
+
+{% endblock %}

@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+
+{% block title %}Movimentar Estoque{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">Movimentar Estoque</h1>
+
+<div class="card mb-4">
+    <div class="card-header">
+        Detalhes do Produto
+    </div>
+    <div class="card-body">
+        <h5 class="card-title">{{ produto.nome }}</h5>
+        <p class="card-text"><strong>Código:</strong> {{ produto.codigo }}</p>
+        <p class="card-text"><strong>Estoque Atual:</strong> {{ produto.quantidade_estoque }} unidades</p>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <form action="{{ url_for('movimentar_estoque', id=produto.id) }}" method="POST">
+            <div class="mb-3">
+                <label class="form-label">Tipo de Movimentação</label>
+                <div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="tipo" id="entrada" value="entrada" checked>
+                        <label class="form-check-label" for="entrada">
+                            Entrada (Compra)
+                        </label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="tipo" id="saida" value="saida">
+                        <label class="form-check-label" for="saida">
+                            Saída (Venda/Consumo)
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <div class="mb-3">
+                <label for="quantidade" class="form-label">Quantidade</label>
+                <input type="number" class="form-control" id="quantidade" name="quantidade" min="1" required>
+            </div>
+            <div class="mb-3">
+                <label for="observacao" class="form-label">Observação (Opcional)</label>
+                <textarea class="form-control" id="observacao" name="observacao" rows="3" placeholder="Ex: Compra NF-123, Uso interno, etc."></textarea>
+            </div>
+            
+            <a href="{{ url_for('listar_produtos') }}" class="btn btn-secondary">Cancelar</a>
+            <button type="submit" class="btn btn-primary">Registrar Movimentação</button>
+        </form>
+    </div>
+</div>
+
+{% endblock %}

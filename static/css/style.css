@@ -1,0 +1,55 @@
+/* static/css/style.css */
+
+/* Estilos gerais para o corpo da página */
+body {
+    background-color: #f8f9fa; /* Um cinza muito claro para o fundo */
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Estilizando a barra de navegação principal */
+.navbar {
+    box-shadow: 0 2px 4px rgba(0,0,0,.1);
+}
+
+/* Estilos para os cartões (cards) usados em toda a aplicação */
+.card {
+    border: none;
+    border-radius: 0.5rem;
+    box-shadow: 0 4px 6px rgba(0,0,0,.05);
+    margin-bottom: 1.5rem;
+}
+
+.card-header {
+    font-weight: 600;
+    background-color: #e9ecef;
+    border-bottom: 1px solid #dee2e6;
+}
+
+/* Melhorando a aparência dos botões */
+.btn-primary {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+    transition: background-color 0.2s ease-in-out;
+}
+
+.btn-primary:hover {
+    background-color: #0b5ed7;
+    border-color: #0a58ca;
+}
+
+/* Estilos para as tabelas */
+.table-hover tbody tr:hover {
+    background-color: #f1f1f1;
+    cursor: pointer;
+}
+
+/* Alertas de estoque baixo na tabela de produtos */
+.table-danger, .table-danger > th, .table-danger > td {
+    background-color: #f8d7da !important;
+    color: #721c24;
+}
+
+/* Estilo para as mensagens flash */
+.alert {
+    border-radius: 0.5rem;
+}

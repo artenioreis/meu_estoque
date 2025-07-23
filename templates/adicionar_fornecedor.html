@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+
+{% block title %}Adicionar Fornecedor{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">Cadastrar Novo Fornecedor</h1>
+
+<form action="{{ url_for('adicionar_fornecedor') }}" method="POST">
+    <div class="mb-3">
+        <label for="nome" class="form-label">Nome do Fornecedor</label>
+        <input type="text" class="form-control" id="nome" name="nome" required>
+    </div>
+    <div class="mb-3">
+        <label for="telefone" class="form-label">Telefone (Opcional)</label>
+        <input type="text" class="form-control" id="telefone" name="telefone">
+    </div>
+    <div class="mb-3">
+        <label for="email" class="form-label">Email (Opcional)</label>
+        <input type="email" class="form-control" id="email" name="email">
+    </div>
+    
+    <a href="{{ url_for('listar_fornecedores') }}" class="btn btn-secondary">Cancelar</a>
+    <button type="submit" class="btn btn-primary">Salvar Fornecedor</button>
+</form>
+{% endblock %}

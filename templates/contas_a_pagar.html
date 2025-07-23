@@ -1,0 +1,76 @@
+{% extends 'base.html' %}
+
+{% block title %}Contas a Pagar{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>Contas a Pagar</h1>
+    <a href="{{ url_for('adicionar_conta') }}" class="btn btn-primary">Lançar Nova Conta</a>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th>Fornecedor</th>
+                    <th>Descrição</th>
+                    <th>Valor</th>
+                    <th>Vencimento</th>
+                    <th class="text-center">Status</th>
+                    <th class="text-center">Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for conta in contas %}
+                    {# Define a classe da linha com base na data de vencimento #}
+                    {% set hoje = modules.date.today() %}
+                    {% set amanha = hoje + modules.timedelta(days=1) %}
+                    
+                    {% set row_class = '' %}
+                    {% if conta.status == 'pendente' and conta.data_vencimento < hoje %}
+                        {% set row_class = 'table-danger' %}
+                    {% elif conta.status == 'pendente' and conta.data_vencimento == hoje %}
+                        {% set row_class = 'table-primary' %}
+                    {% elif conta.status == 'pendente' and conta.data_vencimento == amanha %}
+                        {% set row_class = 'table-warning' %}
+                    {% endif %}
+
+                <tr class="{{ row_class }}">
+                    <td>{{ conta.fornecedor.nome }}</td>
+                    <td>{{ conta.descricao }}</td>
+                    <td>R$ {{ "%.2f"|format(conta.valor) }}</td>
+                    <td>{{ conta.data_vencimento.strftime('%d/%m/%Y') }}</td>
+                    <td class="text-center">
+                        {% if conta.status == 'pago' %}
+                            <span class="badge bg-success">Pago</span>
+                        {% elif row_class == 'table-danger' %}
+                            <span class="badge bg-danger">Vencida</span>
+                        {% elif row_class == 'table-primary' %}
+                            <span class="badge bg-primary">Vence Hoje</span>
+                        {% elif row_class == 'table-warning' %}
+                            <span class="badge bg-warning text-dark">Vence amanhã</span>
+                        {% else %}
+                            <span class="badge bg-info text-dark">Pendente</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-center">
+                        {% if conta.status == 'pendente' %}
+                            <form action="{{ url_for('pagar_conta', id=conta.id) }}" method="POST" class="d-inline">
+                                <button type="submit" class="btn btn-success btn-sm">Marcar como Pago</button>
+                            </form>
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" class="text-center text-muted">Nenhuma conta a pagar encontrada.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

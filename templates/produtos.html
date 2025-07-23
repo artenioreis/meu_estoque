@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+
+{% block title %}Controle de Estoque{% endblock %}
+
+{% block content %}
+    <h1>Produtos em Estoque</h1>
+    <a href="{{ url_for('adicionar_produto') }}" class="btn btn-primary mb-3">Adicionar Novo Produto</a>
+    
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Código</th>
+                <th>Nome</th>
+                <th>Estoque Atual</th>
+                <th>Preço Venda</th>
+                <th>Fornecedor</th>
+                <th>Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for produto in produtos %}
+            <tr class="{% if produto.quantidade_estoque <= produto.estoque_minimo %}table-danger{% endif %}">
+                <td>{{ produto.codigo }}</td>
+                <td>{{ produto.nome }}</td>
+                <td>{{ produto.quantidade_estoque }}</td>
+                <td>R$ {{ "%.2f"|format(produto.preco_venda) }}</td>
+                <td>{{ produto.fornecedor.nome }}</td>
+                <td>
+                    <form action="{{ url_for('movimentar_estoque', id=produto.id) }}" method="POST" class="d-inline-flex">
+                        <input type="number" name="quantidade" class="form-control form-control-sm me-1" style="width: 70px;" required>
+                        <select name="tipo" class="form-select form-select-sm me-1">
+                            <option value="entrada">Entrada</option>
+                            <option value="saida">Saída</option>
+                        </select>
+                        <button type="submit" class="btn btn-secondary btn-sm">OK</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% endblock %}
