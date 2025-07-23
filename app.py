@@ -4,6 +4,7 @@ from models import db, Fornecedor, Produto, MovimentacaoEstoque, ContaPagar
 from datetime import datetime, date, timedelta
 from functools import wraps
 from sqlalchemy import func
+import streamlit as st
 
 # --- CONFIGURAÇÃO DA APLICAÇÃO ---
 app = Flask(__name__)
@@ -223,3 +224,11 @@ with app.app_context():
 # --- EXECUÇÃO DA APLICAÇÃO ---
 if __name__ == '__main__':
     app.run(debug=True)
+
+
+
+# Seu código Streamlit aqui
+
+if __name__ == "__main__":
+    st.title("Minha Aplicação Streamlit")
+    # Mais código Streamlit
