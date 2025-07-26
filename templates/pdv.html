@@ -1,0 +1,163 @@
+{% extends 'base.html' %}
+
+{% block title %}PDV - Ponto de Venda{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Coluna da Venda -->
+    <div class="col-md-7">
+        <h1 class="mb-4">Ponto de Venda</h1>
+        <!-- Busca de Produto -->
+        <div class="input-group mb-3">
+            <span class="input-group-text"><i class="fas fa-search"></i></span>
+            <input type="text" id="buscaProduto" class="form-control" placeholder="Digite o código ou nome do produto...">
+        </div>
+        <div id="resultadoBusca" class="list-group" style="position: absolute; z-index: 1000; width: 95%;"></div>
+        
+        <hr>
+
+        <!-- Itens da Venda -->
+        <div class="card">
+            <div class="card-header">
+                Itens da Venda
+            </div>
+            <div class="card-body">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Produto</th>
+                            <th style="width: 120px;">Qtd.</th>
+                            <th>Preço Unit.</th>
+                            <th>Subtotal</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="itensVenda">
+                        <!-- Itens serão adicionados aqui via JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Coluna do Total e Finalização -->
+    <div class="col-md-5">
+        <div class="card bg-light" style="position: sticky; top: 20px;">
+            <div class="card-body">
+                <h3 class="card-title text-center">Total da Venda</h3>
+                <h1 class="display-4 text-center mb-4" id="valorTotal">R$ 0,00</h1>
+                <form id="formVenda" action="{{ url_for('finalizar_venda') }}" method="POST" target="_blank">
+                    <input type="hidden" name="venda_data" id="vendaDataInput">
+                    <button type="submit" class="btn btn-success btn-lg w-100" id="btnFinalizar">
+                        <i class="fas fa-check-circle"></i> Finalizar Venda
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const buscaInput = document.getElementById('buscaProduto');
+    const resultadoBusca = document.getElementById('resultadoBusca');
+    const itensVendaBody = document.getElementById('itensVenda');
+    const valorTotalEl = document.getElementById('valorTotal');
+    const formVenda = document.getElementById('formVenda');
+    const vendaDataInput = document.getElementById('vendaDataInput');
+
+    let vendaItens = [];
+
+    // Função para buscar produtos
+    buscaInput.addEventListener('keyup', function() {
+        const query = buscaInput.value;
+        if (query.length < 2) {
+            resultadoBusca.innerHTML = '';
+            return;
+        }
+        fetch(`{{ url_for('buscar_produto') }}?q=${query}`)
+            .then(response => response.json())
+            .then(data => {
+                resultadoBusca.innerHTML = '';
+                data.forEach(produto => {
+                    const item = document.createElement('a');
+                    item.href = '#';
+                    item.className = 'list-group-item list-group-item-action';
+                    item.textContent = `${produto.nome} (R$ ${produto.preco_venda.toFixed(2)})`;
+                    item.onclick = (e) => {
+                        e.preventDefault();
+                        adicionarItemVenda(produto);
+                        buscaInput.value = '';
+                        resultadoBusca.innerHTML = '';
+                        buscaInput.focus();
+                    };
+                    resultadoBusca.appendChild(item);
+                });
+            });
+    });
+
+    // Adicionar item na lista de venda
+    function adicionarItemVenda(produto) {
+        const itemExistente = vendaItens.find(item => item.id === produto.id);
+        if (itemExistente) {
+            itemExistente.quantidade++;
+        } else {
+            vendaItens.push({ ...produto, quantidade: 1 });
+        }
+        atualizarTabelaVenda();
+    }
+
+    // Atualizar a tabela e o total
+    function atualizarTabelaVenda() {
+        itensVendaBody.innerHTML = '';
+        let total = 0;
+
+        vendaItens.forEach((item, index) => {
+            const subtotal = item.quantidade * item.preco_venda;
+            total += subtotal;
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${item.nome}</td>
+                <td><input type="number" class="form-control form-control-sm" value="${item.quantidade}" min="1" data-index="${index}"></td>
+                <td>R$ ${item.preco_venda.toFixed(2)}</td>
+                <td>R$ ${subtotal.toFixed(2)}</td>
+                <td><button class="btn btn-danger btn-sm" data-index="${index}">&times;</button></td>
+            `;
+            itensVendaBody.appendChild(tr);
+        });
+
+        valorTotalEl.textContent = `R$ ${total.toFixed(2)}`;
+        vendaDataInput.value = JSON.stringify(vendaItens);
+    }
+
+    // Mudar quantidade ou remover item
+    itensVendaBody.addEventListener('change', function(e) {
+        if (e.target.tagName === 'INPUT') {
+            const index = e.target.dataset.index;
+            const novaQtd = parseInt(e.target.value);
+            if (novaQtd > 0) {
+                vendaItens[index].quantidade = novaQtd;
+            }
+            atualizarTabelaVenda();
+        }
+    });
+
+    itensVendaBody.addEventListener('click', function(e) {
+        if (e.target.tagName === 'BUTTON') {
+            const index = e.target.dataset.index;
+            vendaItens.splice(index, 1);
+            atualizarTabelaVenda();
+        }
+    });
+    
+    // Limpar carrinho após finalizar
+    formVenda.addEventListener('submit', function() {
+        setTimeout(() => {
+            vendaItens = [];
+            atualizarTabelaVenda();
+        }, 1000);
+    });
+});
+</script>
+{% endblock %}

@@ -5,6 +5,7 @@
 {% block content %}
 <h1 class="mb-4">Lançar Nova Conta a Pagar</h1>
 
+<!-- Ação do formulário corrigida para apontar para 'adicionar_conta' -->
 <form action="{{ url_for('adicionar_conta') }}" method="POST">
     <div class="mb-3">
         <label for="descricao" class="form-label">Descrição da Conta</label>

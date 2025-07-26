@@ -3,40 +3,83 @@
 {% block title %}Controle de Estoque{% endblock %}
 
 {% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
     <h1>Produtos em Estoque</h1>
-    <a href="{{ url_for('adicionar_produto') }}" class="btn btn-primary mb-3">Adicionar Novo Produto</a>
-    
-    <table class="table table-striped">
-        <thead>
-            <tr>
-                <th>Código</th>
-                <th>Nome</th>
-                <th>Estoque Atual</th>
-                <th>Preço Venda</th>
-                <th>Fornecedor</th>
-                <th>Ações</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for produto in produtos %}
-            <tr class="{% if produto.quantidade_estoque <= produto.estoque_minimo %}table-danger{% endif %}">
-                <td>{{ produto.codigo }}</td>
-                <td>{{ produto.nome }}</td>
-                <td>{{ produto.quantidade_estoque }}</td>
-                <td>R$ {{ "%.2f"|format(produto.preco_venda) }}</td>
-                <td>{{ produto.fornecedor.nome }}</td>
-                <td>
-                    <form action="{{ url_for('movimentar_estoque', id=produto.id) }}" method="POST" class="d-inline-flex">
-                        <input type="number" name="quantidade" class="form-control form-control-sm me-1" style="width: 70px;" required>
-                        <select name="tipo" class="form-select form-select-sm me-1">
-                            <option value="entrada">Entrada</option>
-                            <option value="saida">Saída</option>
-                        </select>
-                        <button type="submit" class="btn btn-secondary btn-sm">OK</button>
-                    </form>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    <a href="{{ url_for('adicionar_produto') }}" class="btn btn-primary">Adicionar Novo Produto</a>
+</div>
+
+<!-- Formulário de Busca -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="GET" action="{{ url_for('listar_produtos') }}">
+            <div class="input-group">
+                <input type="text" class="form-control" name="q" placeholder="Buscar por nome ou código..." value="{{ search_term or '' }}">
+                <button class="btn btn-outline-secondary" type="submit"><i class="fas fa-search"></i> Buscar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+
+<div class="card">
+    <div class="card-body">
+        <table class="table table-hover align-middle">
+            <thead>
+                <tr>
+                    <th>Código</th>
+                    <th>Nome</th>
+                    <th>Estoque Atual</th>
+                    <th>Preço Venda</th>
+                    <th>Fornecedor</th>
+                    <th class="text-center">Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for produto in produtos %}
+                <tr class="{% if produto.quantidade_estoque <= produto.estoque_minimo %}table-danger{% endif %}">
+                    <td>{{ produto.codigo }}</td>
+                    <td>{{ produto.nome }}</td>
+                    <td>{{ produto.quantidade_estoque }}</td>
+                    <td>R$ {{ "%.2f"|format(produto.preco_venda) }}</td>
+                    <td>{{ produto.fornecedor.nome }}</td>
+                    <td class="text-center">
+                        <a href="{{ url_for('editar_produto', id=produto.id) }}" class="btn btn-secondary btn-sm" title="Editar">
+                            <i class="fas fa-edit"></i>
+                        </a>
+                        <!-- Botão que aciona o modal de exclusão -->
+                        <button type="button" class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#confirmDeleteModal-{{ produto.id }}" title="Excluir">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </td>
+                </tr>
+
+                <!-- Modal de Confirmação de Exclusão -->
+                <div class="modal fade" id="confirmDeleteModal-{{ produto.id }}" tabindex="-1" aria-labelledby="modalLabel-{{ produto.id }}" aria-hidden="true">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="modalLabel-{{ produto.id }}">Confirmar Exclusão</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                Tem certeza que deseja excluir o produto <strong>{{ produto.nome }}</strong>? Esta ação não pode ser desfeita.
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                <form action="{{ url_for('excluir_produto', id=produto.id) }}" method="POST" class="d-inline">
+                                    <button type="submit" class="btn btn-danger">Excluir</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <tr>
+                    <td colspan="6" class="text-center text-muted">Nenhum produto encontrado.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
 {% endblock %}

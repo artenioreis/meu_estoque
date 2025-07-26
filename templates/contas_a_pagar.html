@@ -8,9 +8,21 @@
     <a href="{{ url_for('adicionar_conta') }}" class="btn btn-primary">Lançar Nova Conta</a>
 </div>
 
+<!-- Formulário de Busca -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="GET" action="{{ url_for('listar_contas') }}">
+            <div class="input-group">
+                <input type="text" class="form-control" name="q" placeholder="Buscar por descrição da conta..." value="{{ search_term or '' }}">
+                <button class="btn btn-outline-secondary" type="submit"><i class="fas fa-search"></i> Buscar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <div class="card">
     <div class="card-body">
-        <table class="table table-hover">
+        <table class="table table-hover align-middle">
             <thead>
                 <tr>
                     <th>Fornecedor</th>
@@ -23,10 +35,8 @@
             </thead>
             <tbody>
                 {% for conta in contas %}
-                    {# Define a classe da linha com base na data de vencimento #}
                     {% set hoje = modules.date.today() %}
                     {% set amanha = hoje + modules.timedelta(days=1) %}
-                    
                     {% set row_class = '' %}
                     {% if conta.status == 'pendente' and conta.data_vencimento < hoje %}
                         {% set row_class = 'table-danger' %}
@@ -35,7 +45,6 @@
                     {% elif conta.status == 'pendente' and conta.data_vencimento == amanha %}
                         {% set row_class = 'table-warning' %}
                     {% endif %}
-
                 <tr class="{{ row_class }}">
                     <td>{{ conta.fornecedor.nome }}</td>
                     <td>{{ conta.descricao }}</td>
@@ -55,18 +64,38 @@
                         {% endif %}
                     </td>
                     <td class="text-center">
-                        {% if conta.status == 'pendente' %}
-                            <form action="{{ url_for('pagar_conta', id=conta.id) }}" method="POST" class="d-inline">
-                                <button type="submit" class="btn btn-success btn-sm">Marcar como Pago</button>
-                            </form>
-                        {% else %}
-                            -
-                        {% endif %}
+                        <a href="{{ url_for('editar_conta', id=conta.id) }}" class="btn btn-secondary btn-sm" title="Editar">
+                            <i class="fas fa-edit"></i>
+                        </a>
+                        <button type="button" class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#confirmDeleteModal-{{ conta.id }}" title="Excluir">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
                     </td>
                 </tr>
+
+                <!-- Modal de Confirmação de Exclusão -->
+                <div class="modal fade" id="confirmDeleteModal-{{ conta.id }}" tabindex="-1" aria-labelledby="modalLabel-{{ conta.id }}" aria-hidden="true">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="modalLabel-{{ conta.id }}">Confirmar Exclusão</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                Tem certeza que deseja excluir a conta <strong>{{ conta.descricao }}</strong>?
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                <form action="{{ url_for('excluir_conta', id=conta.id) }}" method="POST" class="d-inline">
+                                    <button type="submit" class="btn btn-danger">Excluir</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 {% else %}
                 <tr>
-                    <td colspan="6" class="text-center text-muted">Nenhuma conta a pagar encontrada.</td>
+                    <td colspan="6" class="text-center text-muted">Nenhuma conta encontrada.</td>
                 </tr>
                 {% endfor %}
             </tbody>

@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+
+{% block title %}Editar Produto{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">Editar Produto</h1>
+
+<form action="{{ url_for('editar_produto', id=produto.id) }}" method="POST">
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <label for="nome" class="form-label">Nome do Produto</label>
+            <input type="text" class="form-control" id="nome" name="nome" value="{{ produto.nome }}" required>
+        </div>
+        <div class="col-md-6 mb-3">
+            <label for="codigo" class="form-label">Código (SKU)</label>
+            <input type="text" class="form-control" id="codigo" name="codigo" value="{{ produto.codigo }}" required>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <label for="categoria" class="form-label">Categoria</label>
+            <input type="text" class="form-control" id="categoria" name="categoria" value="{{ produto.categoria or '' }}">
+        </div>
+        <div class="col-md-6 mb-3">
+            <label for="fornecedor_id" class="form-label">Fornecedor</label>
+            <select class="form-select" id="fornecedor_id" name="fornecedor_id" required>
+                {% for fornecedor in fornecedores %}
+                <option value="{{ fornecedor.id }}" {% if fornecedor.id == produto.fornecedor_id %}selected{% endif %}>
+                    {{ fornecedor.nome }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-3 mb-3">
+            <label for="preco_custo" class="form-label">Preço de Custo</label>
+            <input type="number" step="0.01" class="form-control" id="preco_custo" name="preco_custo" value="{{ produto.preco_custo }}" required>
+        </div>
+        <div class="col-md-3 mb-3">
+            <label for="preco_venda" class="form-label">Preço de Venda</label>
+            <input type="number" step="0.01" class="form-control" id="preco_venda" name="preco_venda" value="{{ produto.preco_venda }}" required>
+        </div>
+        <div class="col-md-3 mb-3">
+            <label for="quantidade_estoque" class="form-label">Estoque Atual</label>
+            <input type="number" class="form-control" id="quantidade_estoque" name="quantidade_estoque" value="{{ produto.quantidade_estoque }}" required>
+        </div>
+        <div class="col-md-3 mb-3">
+            <label for="estoque_minimo" class="form-label">Estoque Mínimo</label>
+            <input type="number" class="form-control" id="estoque_minimo" name="estoque_minimo" value="{{ produto.estoque_minimo }}" required>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <label for="data_fabricacao" class="form-label">Data de Fabricação (Opcional)</label>
+            <input type="date" class="form-control" id="data_fabricacao" name="data_fabricacao" value="{{ produto.data_fabricacao.strftime('%Y-%m-%d') if produto.data_fabricacao }}">
+        </div>
+        <div class="col-md-6 mb-3">
+            <label for="data_vencimento" class="form-label">Data de Vencimento (Opcional)</label>
+            <input type="date" class="form-control" id="data_vencimento" name="data_vencimento" value="{{ produto.data_vencimento.strftime('%Y-%m-%d') if produto.data_vencimento }}">
+        </div>
+    </div>
+    
+    <a href="{{ url_for('listar_produtos') }}" class="btn btn-secondary">Cancelar</a>
+    <button type="submit" class="btn btn-primary">Salvar Alterações</button>
+</form>
+{% endblock %}

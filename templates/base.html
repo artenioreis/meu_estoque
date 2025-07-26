@@ -20,11 +20,13 @@
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto mb-2 mb-lg-0">
                     <li class="nav-item"><a class="nav-link" href="{{ url_for('index') }}">Painel</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ url_for('pdv') }}">PDV</a></li>
                     <li class="nav-item"><a class="nav-link" href="{{ url_for('listar_produtos') }}">Estoque</a></li>
                     <li class="nav-item"><a class="nav-link" href="{{ url_for('listar_contas') }}">Contas a Pagar</a></li>
                     <li class="nav-item"><a class="nav-link" href="{{ url_for('listar_fornecedores') }}">Fornecedores</a></li>
                     <li class="nav-item"><a class="nav-link" href="{{ url_for('relatorios') }}">Relatórios</a></li>
                 </ul>
+                <!-- Seção de Logout -->
                 <ul class="navbar-nav">
                     {% if session['logged_in'] %}
                     <li class="nav-item dropdown">
@@ -42,6 +44,7 @@
     </nav>
 
     <main class="container mt-4">
+        <!-- Bloco para mensagens flash (alertas) -->
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 {% for category, message in messages %}
@@ -52,7 +55,8 @@
                 {% endfor %}
             {% endif %}
         {% endwith %}
-        
+
+        <!-- Conteúdo específico de cada página -->
         {% block content %}{% endblock %}
     </main>
 

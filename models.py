@@ -15,14 +15,10 @@ class Fornecedor(db.Model):
     telefone = db.Column(db.String(20))
     email = db.Column(db.String(100))
     
-    # Relacionamentos: um fornecedor pode ter vários produtos e várias contas a pagar.
-    # O 'backref' cria um atributo virtual (ex: produto.fornecedor) no modelo relacionado.
-    # 'lazy=True' significa que os dados relacionados serão carregados apenas quando acessados.
     produtos = db.relationship('Produto', backref='fornecedor', lazy=True)
     contas = db.relationship('ContaPagar', backref='fornecedor', lazy=True)
 
     def __repr__(self):
-        # Representação em texto do objeto, útil para depuração
         return f'<Fornecedor {self.nome}>'
 
 class Produto(db.Model):
@@ -39,10 +35,11 @@ class Produto(db.Model):
     quantidade_estoque = db.Column(db.Integer, nullable=False, default=0)
     estoque_minimo = db.Column(db.Integer, default=5)
     
-    # Chave estrangeira que liga o produto a um fornecedor
-    fornecedor_id = db.Column(db.Integer, db.ForeignKey('fornecedor.id'), nullable=False)
+    # NOVOS CAMPOS ADICIONADOS
+    data_fabricacao = db.Column(db.Date, nullable=True)
+    data_vencimento = db.Column(db.Date, nullable=True)
     
-    # Relacionamento: um produto pode ter várias movimentações de estoque
+    fornecedor_id = db.Column(db.Integer, db.ForeignKey('fornecedor.id'), nullable=False)
     movimentacoes = db.relationship('MovimentacaoEstoque', backref='produto', lazy=True)
 
     def __repr__(self):
@@ -54,12 +51,10 @@ class MovimentacaoEstoque(db.Model):
     """
     __tablename__ = 'movimentacao_estoque'
     id = db.Column(db.Integer, primary_key=True)
-    tipo = db.Column(db.String(10), nullable=False)  # 'entrada' ou 'saida'
+    tipo = db.Column(db.String(10), nullable=False)
     quantidade = db.Column(db.Integer, nullable=False)
     data = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     observacao = db.Column(db.String(200))
-
-    # Chave estrangeira que liga a movimentação a um produto
     produto_id = db.Column(db.Integer, db.ForeignKey('produto.id'), nullable=False)
 
     def __repr__(self):
@@ -74,10 +69,8 @@ class ContaPagar(db.Model):
     descricao = db.Column(db.String(200), nullable=False)
     valor = db.Column(db.Float, nullable=False)
     data_vencimento = db.Column(db.Date, nullable=False)
-    data_pagamento = db.Column(db.Date, nullable=True) # Fica nulo até ser pago
-    status = db.Column(db.String(20), nullable=False, default='pendente') # 'pendente', 'pago', 'vencido'
-
-    # Chave estrangeira que liga a conta a um fornecedor
+    data_pagamento = db.Column(db.Date, nullable=True)
+    status = db.Column(db.String(20), nullable=False, default='pendente')
     fornecedor_id = db.Column(db.Integer, db.ForeignKey('fornecedor.id'), nullable=False)
 
     def __repr__(self):

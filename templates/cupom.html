@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+    <meta charset="utf-8">
+    <title>Cupom de Venda</title>
+    <style>
+        body {
+            font-family: 'Courier New', Courier, monospace;
+            width: 300px;
+            margin: 0 auto;
+            padding: 10px;
+        }
+        .header, .footer {
+            text-align: center;
+        }
+        h2 {
+            margin: 0;
+            font-size: 1.2em;
+        }
+        hr {
+            border: none;
+            border-top: 1px dashed #000;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 2px 0;
+        }
+        .item-row td {
+            font-size: 0.9em;
+        }
+        .total-row td {
+            font-weight: bold;
+            font-size: 1.1em;
+            padding-top: 5px;
+        }
+        .align-right {
+            text-align: right;
+        }
+        @media print {
+            body {
+                width: 100%;
+            }
+            button {
+                display: none;
+            }
+        }
+        button {
+            width: 100%;
+            padding: 10px;
+            margin-top: 20px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h2>Minha Empresa</h2>
+        <p>Rua Exemplo, 123 - Centro</p>
+        <p>CNPJ: 00.000.000/0001-00</p>
+        <hr>
+        <p><strong>CUPOM NÃO FISCAL</strong></p>
+        <p>{{ data_venda.strftime('%d/%m/%Y %H:%M:%S') }}</p>
+        <hr>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Item</th>
+                <th>Qtd</th>
+                <th>Vl. Unit.</th>
+                <th class="align-right">Subtotal</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in itens_venda %}
+            <tr class="item-row">
+                <td>{{ item.nome }}</td>
+                <td>{{ item.quantidade }}</td>
+                <td>{{ "%.2f"|format(item.preco_venda) }}</td>
+                <td class="align-right">{{ "%.2f"|format(item.quantidade * item.preco_venda) }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <hr>
+
+    <table>
+        <tr class="total-row">
+            <td colspan="3">TOTAL</td>
+            <td class="align-right">R$ {{ "%.2f"|format(total_venda) }}</td>
+        </tr>
+    </table>
+    
+    <hr>
+
+    <div class="footer">
+        <p>Obrigado pela preferência!</p>
+    </div>
+
+    <button onclick="window.print()">Imprimir Cupom</button>
+</body>
+</html>
