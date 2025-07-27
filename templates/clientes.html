@@ -1,35 +1,19 @@
 {% extends 'base.html' %}
 
-{% block title %}Fornecedores{% endblock %}
-
-{% block extra_styles %}
-<style>
-    /* Aplica o background à página de Fornecedores */
-    body {
-        background-image: url('https://images.unsplash.com/photo-1556740738-b6a63e27c4df?q=80&w=2070&auto=format&fit=crop');
-        background-size: cover;
-        background-attachment: fixed;
-    }
-    /* Adiciona um efeito de vidro nos cards para melhorar a legibilidade */
-    .card {
-        background-color: rgba(255, 255, 255, 0.95);
-        backdrop-filter: blur(5px);
-    }
-</style>
-{% endblock %}
+{% block title %}Clientes{% endblock %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h1>Fornecedores Cadastrados</h1>
-    <a href="{{ url_for('adicionar_fornecedor') }}" class="btn btn-primary">Novo Fornecedor</a>
+    <h1>Clientes Cadastrados</h1>
+    <a href="{{ url_for('adicionar_cliente') }}" class="btn btn-primary">Novo Cliente</a>
 </div>
 
-<!-- Formulário de Busca (para consistência) -->
+<!-- Formulário de Busca -->
 <div class="card mb-4">
     <div class="card-body">
-        <form method="GET" action="{{ url_for('listar_fornecedores') }}">
+        <form method="GET" action="{{ url_for('listar_clientes') }}">
             <div class="input-group">
-                <input type="text" class="form-control" name="q" placeholder="Buscar por nome do fornecedor..." value="{{ search_term or '' }}">
+                <input type="text" class="form-control" name="q" placeholder="Buscar por nome ou telefone..." value="{{ search_term or '' }}">
                 <button class="btn btn-outline-secondary" type="submit"><i class="fas fa-search"></i> Buscar</button>
             </div>
         </form>
@@ -48,24 +32,23 @@
                 </tr>
             </thead>
             <tbody>
-                {% for fornecedor in fornecedores %}
+                {% for cliente in clientes %}
                 <tr>
-                    <td>{{ fornecedor.nome }}</td>
-                    <td>{{ fornecedor.telefone or 'Não informado' }}</td>
-                    <td>{{ fornecedor.email or 'Não informado' }}</td>
+                    <td>{{ cliente.nome }}</td>
+                    <td>{{ cliente.telefone or 'Não informado' }}</td>
+                    <td>{{ cliente.email or 'Não informado' }}</td>
                     <td class="text-center">
-                        <!-- A funcionalidade de editar e excluir precisará ser implementada no app.py -->
-                        <a href="#" class="btn btn-secondary btn-sm" title="Editar">
+                        <a href="{{ url_for('editar_cliente', id=cliente.id) }}" class="btn btn-secondary btn-sm" title="Editar">
                             <i class="fas fa-edit"></i>
                         </a>
-                        <button type="button" class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#confirmDeleteModal-{{ fornecedor.id }}" title="Excluir">
+                        <button type="button" class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#confirmDeleteModal-{{ cliente.id }}" title="Excluir">
                             <i class="fas fa-trash-alt"></i>
                         </button>
                     </td>
                 </tr>
 
                 <!-- Modal de Confirmação de Exclusão -->
-                <div class="modal fade" id="confirmDeleteModal-{{ fornecedor.id }}" tabindex="-1">
+                <div class="modal fade" id="confirmDeleteModal-{{ cliente.id }}" tabindex="-1">
                     <div class="modal-dialog">
                         <div class="modal-content">
                             <div class="modal-header">
@@ -73,12 +56,11 @@
                                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                             </div>
                             <div class="modal-body">
-                                Tem certeza que deseja excluir o fornecedor <strong>{{ fornecedor.nome }}</strong>?
+                                Tem certeza que deseja excluir o cliente <strong>{{ cliente.nome }}</strong>?
                             </div>
                             <div class="modal-footer">
                                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                                <!-- A ação do formulário precisará ser implementada no app.py -->
-                                <form action="#" method="POST" class="d-inline">
+                                <form action="{{ url_for('excluir_cliente', id=cliente.id) }}" method="POST" class="d-inline">
                                     <button type="submit" class="btn btn-danger">Excluir</button>
                                 </form>
                             </div>
@@ -87,7 +69,7 @@
                 </div>
                 {% else %}
                 <tr>
-                    <td colspan="4" class="text-center text-muted">Nenhum fornecedor encontrado.</td>
+                    <td colspan="4" class="text-center text-muted">Nenhum cliente encontrado.</td>
                 </tr>
                 {% endfor %}
             </tbody>

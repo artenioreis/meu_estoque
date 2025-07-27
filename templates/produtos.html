@@ -2,6 +2,22 @@
 
 {% block title %}Controle de Estoque{% endblock %}
 
+{% block extra_styles %}
+<style>
+    /* Aplica o background à página de Estoque */
+    body {
+        background-image: url('https://www.in4.com.br/wp-content/uploads/2024/05/erp-e-gestao-de-estoque-descentralizado.01.jpg');
+        background-size: cover;
+        background-attachment: fixed;
+    }
+    /* Adiciona um efeito de vidro nos cards para melhorar a legibilidade */
+    .card {
+        background-color: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(5px);
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h1>Produtos em Estoque</h1>

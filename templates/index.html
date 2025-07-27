@@ -2,160 +2,164 @@
 
 {% block title %}Painel Principal{% endblock %}
 
+{% block extra_styles %}
+<style>
+    /* Aplica um background ao corpo da página do Painel de Controle */
+    body {
+        background-image: url('https://images.unsplash.com/photo-1618005198919-d3d4b5a92ead?q=80&w=1974&auto=format&fit=crop');
+        background-size: cover;
+        background-attachment: fixed; /* Mantém o fundo fixo ao rolar a página */
+    }
+    /* Adiciona um efeito de vidro nos cards para melhorar a legibilidade */
+    .card {
+        background-color: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(5px);
+    }
+    .card-chart {
+        height: 350px;
+    }
+    .chart-container {
+        position: relative;
+        height: 100%;
+        width: 100%;
+    }
+    .no-data-message {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        color: #888;
+        display: none; /* Escondido por defeito */
+    }
+</style>
+{% endblock %}
+
+
 {% block content %}
+<!-- Elemento para passar a URL da API para o JavaScript -->
+<div id="api-url-container" data-url="{{ url_for('dados_graficos') }}" style="display: none;"></div>
+
+<!-- Banner de Erro Visível -->
+<div id="error-banner" class="alert alert-danger p-4" style="display: none;">
+    <h4 class="alert-heading">Erro de Execução!</h4>
+    <p>Os gráficos não puderam ser carregados. Este problema ocorre quando o ficheiro HTML é aberto diretamente no navegador.</p>
+    <hr>
+    <p class="mb-0"><strong>Solução:</strong> Por favor, inicie o servidor com o comando <code>flask run</code> no seu terminal e aceda à aplicação através do endereço <code>http://127.0.0.1:5000</code>.</p>
+</div>
+
 <h1 class="mb-4">Painel de Controle</h1>
 
 <!-- Seção dos Gráficos -->
 <div class="row mb-4">
-    <div class="col-lg-6 mb-4">
-        <div class="card h-100">
-            <div class="card-header">Top 5 Produtos em Estoque</div>
+    <div class="col-lg-8 mb-4">
+        <div class="card card-chart">
+            <div class="card-header">Vendas nos Últimos 7 Dias</div>
             <div class="card-body">
-                <!-- Wrapper para controle de tamanho -->
-                <div style="position: relative; height: 300px;">
-                    <canvas id="graficoEstoque"></canvas>
+                <div class="chart-container">
+                    <canvas id="graficoVendasDiarias"></canvas>
+                    <p id="no-data-vendas" class="no-data-message">Não há dados de vendas para exibir.</p>
                 </div>
             </div>
         </div>
     </div>
-    <div class="col-lg-6 mb-4">
-        <div class="card h-100">
-            <div class="card-header">Top 5 Produtos Mais Vendidos (PDV)</div>
-            <div class="card-body">
-                <!-- Wrapper para controle de tamanho -->
-                <div style="position: relative; height: 300px;">
-                    <canvas id="graficoMaisVendidos"></canvas>
+    <div class="col-lg-4 mb-4">
+        <div class="card card-chart">
+            <div class="card-header">Situação das Contas a Pagar</div>
+            <div class="card-body d-flex align-items-center justify-content-center">
+                <div class="chart-container">
+                    <canvas id="graficoContasPagar"></canvas>
+                    <p id="no-data-contas" class="no-data-message">Não há contas a pagar.</p>
                 </div>
             </div>
         </div>
     </div>
 </div>
 <div class="row mb-4">
-    <div class="col-md-4">
-        <div class="card h-100">
-            <div class="card-header">Situação das Contas</div>
-            <div class="card-body d-flex align-items-center justify-content-center">
-                <!-- Wrapper para controle de tamanho -->
-                <div style="position: relative; height: 250px; width: 250px;">
-                    <canvas id="graficoContas"></canvas>
+    <div class="col-lg-6 mb-4">
+        <div class="card card-chart">
+            <div class="card-header">Top 5 Produtos em Estoque</div>
+            <div class="card-body">
+                <div class="chart-container">
+                    <canvas id="graficoEstoque"></canvas>
+                    <p id="no-data-estoque" class="no-data-message">Não há produtos no estoque.</p>
                 </div>
             </div>
         </div>
     </div>
-    <div class="col-md-8">
-        <!-- Alertas -->
-        <div class="row">
-            <div class="col-12 mb-4">
-                <h4><i class="fas fa-box-open"></i> Alertas de Estoque</h4>
-                {% if produtos_alertas or produtos_perto_vencer %}
-                    <ul class="list-group">
-                        {% for produto in produtos_alertas %}
-                        <li class="list-group-item list-group-item-danger d-flex justify-content-between align-items-center">
-                            Estoque baixo: {{ produto.nome }} <span class="badge bg-danger rounded-pill">{{ produto.quantidade_estoque }} un.</span>
-                        </li>
-                        {% endfor %}
-                        {% for produto in produtos_perto_vencer %}
-                        <li class="list-group-item list-group-item-warning d-flex justify-content-between align-items-center">
-                            Perto de vencer: {{ produto.nome }} <span class="badge bg-warning text-dark">Vence em {{ produto.data_vencimento.strftime('%d/%m/%Y') }}</span>
-                        </li>
-                        {% endfor %}
-                    </ul>
-                {% else %}
-                    <p class="text-muted">Nenhum alerta de estoque.</p>
-                {% endif %}
-            </div>
-            <div class="col-12">
-                <h4><i class="fas fa-file-invoice-dollar"></i> Alertas de Contas</h4>
-                {% if contas_vencidas or contas_vencendo_hoje or contas_vencendo_amanha %}
-                    <ul class="list-group">
-                        {% for conta in contas_vencidas %}
-                        <li class="list-group-item list-group-item-danger"><strong>VENCIDA:</strong> {{ conta.descricao }} (R$ {{ "%.2f"|format(conta.valor) }})</li>
-                        {% endfor %}
-                        {% for conta in contas_vencendo_hoje %}
-                        <li class="list-group-item list-group-item-primary"><strong>VENCE HOJE:</strong> {{ conta.descricao }} (R$ {{ "%.2f"|format(conta.valor) }})</li>
-                        {% endfor %}
-                        {% for conta in contas_vencendo_amanha %}
-                        <li class="list-group-item list-group-item-warning"><strong>Vence Amanhã:</strong> {{ conta.descricao }} (R$ {{ "%.2f"|format(conta.valor) }})</li>
-                        {% endfor %}
-                    </ul>
-                {% else %}
-                    <p class="text-muted">Nenhuma conta com vencimento próximo.</p>
-                {% endif %}
+    <div class="col-lg-6 mb-4">
+        <div class="card card-chart">
+            <div class="card-header">Top 5 Produtos Mais Vendidos (PDV)</div>
+            <div class="card-body">
+                <div class="chart-container">
+                    <canvas id="graficoMaisVendidos"></canvas>
+                    <p id="no-data-vendidos" class="no-data-message">Nenhuma venda registada no PDV.</p>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-    fetch("{{ url_for('dados_graficos') }}")
-        .then(response => response.json())
-        .then(data => {
-            // Gráfico 1: Estoque
-            const ctxEstoque = document.getElementById('graficoEstoque').getContext('2d');
-            new Chart(ctxEstoque, {
-                type: 'bar',
-                data: {
-                    labels: data.estoque.labels,
-                    datasets: [{
-                        label: 'Quantidade em Estoque',
-                        data: data.estoque.data,
-                        backgroundColor: 'rgba(54, 162, 235, 0.6)',
-                        borderColor: 'rgba(54, 162, 235, 1)',
-                        borderWidth: 1
-                    }]
-                },
-                options: { 
-                    indexAxis: 'y', 
-                    responsive: true, 
-                    maintainAspectRatio: false, // Ajuste para qualidade
-                    plugins: { legend: { display: false } } 
-                }
-            });
+<!-- Seção de Alertas -->
+<div class="row">
+    <div class="col-lg-4 mb-4">
+        <h4><i class="fas fa-box-open"></i> Alertas de Estoque</h4>
+        {% if produtos_alertas or produtos_perto_vencer %}
+            <ul class="list-group">
+                {% for produto in produtos_alertas %}
+                <li class="list-group-item list-group-item-danger d-flex justify-content-between align-items-center">
+                    Estoque baixo: {{ produto.nome }} <span class="badge bg-danger rounded-pill">{{ produto.quantidade_estoque }} un.</span>
+                </li>
+                {% endfor %}
+                {% for produto in produtos_perto_vencer %}
+                <li class="list-group-item list-group-item-warning d-flex justify-content-between align-items-center">
+                    Perto de vencer: {{ produto.nome }} <span class="badge bg-warning text-dark">Vence em {{ produto.data_vencimento.strftime('%d/%m/%Y') }}</span>
+                </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p class="text-muted">Nenhum alerta de estoque.</p>
+        {% endif %}
+    </div>
+    <div class="col-lg-4 mb-4">
+        <h4><i class="fas fa-file-invoice-dollar"></i> Alertas de Contas a Pagar</h4>
+        {% if contas_vencidas or contas_vencendo_hoje or contas_vencendo_amanha %}
+            <ul class="list-group">
+                {% for conta in contas_vencidas %}
+                <li class="list-group-item list-group-item-danger"><strong>VENCIDA:</strong> {{ conta.descricao }} (R$ {{ "%.2f"|format(conta.valor) }})</li>
+                {% endfor %}
+                {% for conta in contas_vencendo_hoje %}
+                <li class="list-group-item list-group-item-primary"><strong>VENCE HOJE:</strong> {{ conta.descricao }} (R$ {{ "%.2f"|format(conta.valor) }})</li>
+                {% endfor %}
+                {% for conta in contas_vencendo_amanha %}
+                <li class="list-group-item list-group-item-warning"><strong>Vence Amanhã:</strong> {{ conta.descricao }} (R$ {{ "%.2f"|format(conta.valor) }})</li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p class="text-muted">Nenhuma conta a pagar com vencimento próximo.</p>
+        {% endif %}
+    </div>
+    <div class="col-lg-4 mb-4">
+        <h4><i class="fas fa-user-clock"></i> Contas a Receber (A Prazo)</h4>
+        {% if contas_a_prazo_alertas %}
+            <ul class="list-group">
+                {% for conta in contas_a_prazo_alertas %}
+                <li class="list-group-item list-group-item-info d-flex justify-content-between align-items-center">
+                    <div>
+                        <strong>{{ conta.cliente.nome }}</strong><br>
+                        <small>R$ {{ "%.2f"|format(conta.valor) }}</small>
+                    </div>
+                    <span class="badge bg-info text-dark">Venda de {{ conta.data_venda.strftime('%d/%m/%Y') }}</span>
+                </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p class="text-muted">Nenhuma conta a receber em aberto.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
 
-            // Gráfico 2: Mais Vendidos
-            const ctxMaisVendidos = document.getElementById('graficoMaisVendidos').getContext('2d');
-            new Chart(ctxMaisVendidos, {
-                type: 'bar',
-                data: {
-                    labels: data.mais_vendidos.labels,
-                    datasets: [{
-                        label: 'Unidades Vendidas',
-                        data: data.mais_vendidos.data,
-                        backgroundColor: 'rgba(75, 192, 192, 0.6)',
-                        borderColor: 'rgba(75, 192, 192, 1)',
-                        borderWidth: 1
-                    }]
-                },
-                options: { 
-                    indexAxis: 'y', 
-                    responsive: true, 
-                    maintainAspectRatio: false, // Ajuste para qualidade
-                    plugins: { legend: { display: false } } 
-                }
-            });
-
-            // Gráfico 3: Contas
-            const ctxContas = document.getElementById('graficoContas').getContext('2d');
-            new Chart(ctxContas, {
-                type: 'pie',
-                data: {
-                    labels: data.contas.labels,
-                    datasets: [{
-                        label: 'Status',
-                        data: data.contas.data,
-                        backgroundColor: ['rgba(255, 159, 64, 0.6)', 'rgba(75, 192, 192, 0.6)', 'rgba(255, 99, 132, 0.6)'],
-                        borderColor: ['rgba(255, 159, 64, 1)', 'rgba(75, 192, 192, 1)', 'rgba(255, 99, 132, 1)'],
-                        borderWidth: 1
-                    }]
-                },
-                options: { 
-                    responsive: true, 
-                    maintainAspectRatio: false, // Ajuste para qualidade
-                    plugins: { legend: { position: 'top' } } 
-                }
-            });
-        });
-});
-</script>
+{% block scripts %}
+<!-- Chama o ficheiro JavaScript externo -->
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
 {% endblock %}

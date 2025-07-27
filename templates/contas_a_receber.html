@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+
+{% block title %}Contas a Receber{% endblock %}
+
+{% block extra_styles %}
+<style>
+    /* Aplica um background à página */
+    body {
+        background-image: url('https://images.unsplash.com/photo-1634902241310-44dce8443315?q=80&w=2070&auto=format&fit=crop');
+        background-size: cover;
+        background-attachment: fixed;
+    }
+    .card {
+        background-color: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(5px);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>Contas a Receber</h1>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <table class="table table-hover align-middle">
+            <thead>
+                <tr>
+                    <th>Cliente</th>
+                    <th>Data da Venda</th>
+                    <th>Valor</th>
+                    <th>Forma de Pagamento</th>
+                    <th class="text-center">Status</th>
+                    <th class="text-center">Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for conta in contas %}
+                <tr class="{% if conta.status == 'Em Aberto' %}table-warning{% else %}table-success{% endif %}">
+                    <td>{{ conta.cliente.nome }}</td>
+                    <td>{{ conta.data_venda.strftime('%d/%m/%Y') }}</td>
+                    <td>R$ {{ "%.2f"|format(conta.valor) }}</td>
+                    <td>{{ conta.forma_pagamento }}</td>
+                    <td class="text-center">
+                        {% if conta.status == 'Recebido' %}
+                            <span class="badge bg-success">Recebido</span>
+                        {% else %}
+                            <span class="badge bg-warning text-dark">Em Aberto</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-center">
+                        {% if conta.status == 'Em Aberto' %}
+                        <form action="{{ url_for('baixar_conta_receber', id=conta.id) }}" method="POST" class="d-inline">
+                            <button type="submit" class="btn btn-success btn-sm" title="Dar Baixa (Receber)">
+                                <i class="fas fa-hand-holding-usd"></i>
+                            </button>
+                        </form>
+                        {% else %}
+                            Recebido em {{ conta.data_recebimento.strftime('%d/%m/%Y') }}
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" class="text-center text-muted">Nenhuma conta a receber encontrada.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

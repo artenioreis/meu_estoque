@@ -17,6 +17,9 @@
             margin: 0;
             font-size: 1.2em;
         }
+        p {
+            margin: 5px 0;
+        }
         hr {
             border: none;
             border-top: 1px dashed #000;
@@ -42,6 +45,8 @@
         @media print {
             body {
                 width: 100%;
+                margin: 0;
+                padding: 0;
             }
             button {
                 display: none;
@@ -52,6 +57,7 @@
             padding: 10px;
             margin-top: 20px;
             cursor: pointer;
+            font-size: 1em;
         }
     </style>
 </head>
@@ -65,6 +71,14 @@
         <p>{{ data_venda.strftime('%d/%m/%Y %H:%M:%S') }}</p>
         <hr>
     </div>
+
+    <!-- Seção do Cliente (só aparece se um cliente for selecionado) -->
+    {% if cliente %}
+    <div class="cliente-info">
+        <p><strong>CLIENTE:</strong> {{ cliente.nome }}</p>
+        <hr>
+    </div>
+    {% endif %}
 
     <table>
         <thead>
@@ -94,6 +108,12 @@
             <td colspan="3">TOTAL</td>
             <td class="align-right">R$ {{ "%.2f"|format(total_venda) }}</td>
         </tr>
+        <!-- Informação da Forma de Pagamento -->
+        {% if forma_pagamento %}
+        <tr>
+            <td colspan="4">Pagamento: {{ forma_pagamento }}</td>
+        </tr>
+        {% endif %}
     </table>
     
     <hr>

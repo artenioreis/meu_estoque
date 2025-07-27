@@ -2,6 +2,22 @@
 
 {% block title %}Contas a Pagar{% endblock %}
 
+{% block extra_styles %}
+<style>
+    /* Aplica o background à página de Contas a Pagar */
+    body {
+        background-image: url('https://s.criacaostatic.cc/higestors4xflsio/uploads/2025/04/contas-a-pagar-e-a-receber.jpg');
+        background-size: cover;
+        background-attachment: fixed;
+    }
+    /* Adiciona um efeito de vidro nos cards para melhorar a legibilidade */
+    .card {
+        background-color: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(5px);
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h1>Contas a Pagar</h1>
@@ -64,6 +80,14 @@
                         {% endif %}
                     </td>
                     <td class="text-center">
+                        {% if conta.status == 'pendente' %}
+                        <form action="{{ url_for('pagar_conta', id=conta.id) }}" method="POST" class="d-inline">
+                            <button type="submit" class="btn btn-success btn-sm" title="Marcar como Pago">
+                                <i class="fas fa-check"></i>
+                            </button>
+                        </form>
+                        {% endif %}
+
                         <a href="{{ url_for('editar_conta', id=conta.id) }}" class="btn btn-secondary btn-sm" title="Editar">
                             <i class="fas fa-edit"></i>
                         </a>

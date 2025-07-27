@@ -2,6 +2,22 @@
 
 {% block title %}Central de Relatórios{% endblock %}
 
+{% block extra_styles %}
+<style>
+    /* Aplica o background à página de Relatórios */
+    body {
+        background-image: url('https://blog.qualityautomacao.com.br/wp-content/uploads/2025/06/capa_artigo-768x361.jpg');
+        background-size: cover;
+        background-attachment: fixed;
+    }
+    /* Adiciona um efeito de vidro nos cards para melhorar a legibilidade */
+    .card {
+        background-color: rgba(245, 240, 240, 0.95);
+        backdrop-filter: blur(5px);
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <h1 class="mb-4">Central de Relatórios</h1>
 <p class="text-muted mb-5">Selecione uma das opções abaixo para gerar um relatório.</p>
@@ -53,8 +69,4 @@
         </div>
     </div>
 </div>
-
-<!-- Para os ícones funcionarem, adicione o Font Awesome no seu base.html -->
-<!-- Exemplo: <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"> -->
-
 {% endblock %}
