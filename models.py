@@ -55,17 +55,17 @@ class Cliente(db.Model):
     telefone = db.Column(db.String(20))
     email = db.Column(db.String(100))
     endereco = db.Column(db.String(200))
-    vendas = db.relationship('MovimentacaoEstoque', backref='cliente', lazy=True)
-    # Relacionamento com Contas a Receber
-    contas_a_receber = db.relationship('ContaReceber', backref='cliente', lazy=True)
+    
+    # CORREÇÃO: Adicionado cascade="all, delete-orphan" para apagar registos dependentes
+    vendas = db.relationship('MovimentacaoEstoque', backref='cliente', lazy=True, cascade="all, delete-orphan")
+    contas_a_receber = db.relationship('ContaReceber', backref='cliente', lazy=True, cascade="all, delete-orphan")
 
-# NOVA CLASSE PARA CONTAS A RECEBER
 class ContaReceber(db.Model):
     __tablename__ = 'conta_receber'
     id = db.Column(db.Integer, primary_key=True)
     valor = db.Column(db.Float, nullable=False)
     data_venda = db.Column(db.Date, nullable=False, default=datetime.utcnow)
     data_recebimento = db.Column(db.Date, nullable=True)
-    status = db.Column(db.String(20), nullable=False, default='Em Aberto') # Em Aberto, Recebido
-    forma_pagamento = db.Column(db.String(50), nullable=True) # Dinheiro, Pix, Cartão
+    status = db.Column(db.String(20), nullable=False, default='Em Aberto')
+    forma_pagamento = db.Column(db.String(50), nullable=True)
     cliente_id = db.Column(db.Integer, db.ForeignKey('cliente.id'), nullable=False)

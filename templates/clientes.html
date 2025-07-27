@@ -2,6 +2,22 @@
 
 {% block title %}Clientes{% endblock %}
 
+{% block extra_styles %}
+<style>
+    /* Aplica o background à página de Clientes */
+    body {
+        background-image: url('https://images.unsplash.com/photo-1556742212-5b321f3c261b?q=80&w=2070&auto=format&fit=crop');
+        background-size: cover;
+        background-attachment: fixed;
+    }
+    /* Adiciona um efeito de vidro nos cards para melhorar a legibilidade */
+    .card {
+        background-color: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(5px);
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h1>Clientes Cadastrados</h1>
@@ -48,12 +64,12 @@
                 </tr>
 
                 <!-- Modal de Confirmação de Exclusão -->
-                <div class="modal fade" id="confirmDeleteModal-{{ cliente.id }}" tabindex="-1">
+                <div class="modal fade" id="confirmDeleteModal-{{ cliente.id }}" tabindex="-1" aria-labelledby="modalLabel-{{ cliente.id }}" aria-hidden="true">
                     <div class="modal-dialog">
                         <div class="modal-content">
                             <div class="modal-header">
-                                <h5 class="modal-title">Confirmar Exclusão</h5>
-                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                <h5 class="modal-title" id="modalLabel-{{ cliente.id }}">Confirmar Exclusão</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                             </div>
                             <div class="modal-body">
                                 Tem certeza que deseja excluir o cliente <strong>{{ cliente.nome }}</strong>?

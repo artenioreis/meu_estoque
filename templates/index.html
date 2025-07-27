@@ -4,13 +4,11 @@
 
 {% block extra_styles %}
 <style>
-    /* Aplica um background ao corpo da página do Painel de Controle */
     body {
         background-image: url('https://images.unsplash.com/photo-1618005198919-d3d4b5a92ead?q=80&w=1974&auto=format&fit=crop');
         background-size: cover;
-        background-attachment: fixed; /* Mantém o fundo fixo ao rolar a página */
+        background-attachment: fixed;
     }
-    /* Adiciona um efeito de vidro nos cards para melhorar a legibilidade */
     .card {
         background-color: rgba(255, 255, 255, 0.95);
         backdrop-filter: blur(5px);
@@ -38,14 +36,6 @@
 {% block content %}
 <!-- Elemento para passar a URL da API para o JavaScript -->
 <div id="api-url-container" data-url="{{ url_for('dados_graficos') }}" style="display: none;"></div>
-
-<!-- Banner de Erro Visível -->
-<div id="error-banner" class="alert alert-danger p-4" style="display: none;">
-    <h4 class="alert-heading">Erro de Execução!</h4>
-    <p>Os gráficos não puderam ser carregados. Este problema ocorre quando o ficheiro HTML é aberto diretamente no navegador.</p>
-    <hr>
-    <p class="mb-0"><strong>Solução:</strong> Por favor, inicie o servidor com o comando <code>flask run</code> no seu terminal e aceda à aplicação através do endereço <code>http://127.0.0.1:5000</code>.</p>
-</div>
 
 <h1 class="mb-4">Painel de Controle</h1>
 
