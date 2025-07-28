@@ -340,15 +340,18 @@ def excluir_cliente(id):
 def relatorios():
     return render_template('relatorios.html')
 
-# --- 3. EXECUÇÃO DA APLICAÇÃO (APENAS PARA DESENVOLVIMENTO LOCAL) ---
+# --- 3. EXECUÇÃO DA APLICAÇÃO ---
+
+# Este bloco só é executado quando você roda o script diretamente (ex: `python app.py`)
+# em seu computador local. Ele NUNCA é executado em um ambiente de produção correto
+# (como Render, Heroku, etc.), pois eles usam um servidor WSGI (Gunicorn) para
+# importar a variável `app` em vez de executar o arquivo.
 if __name__ == '__main__':
+    # Garante que o app tenha o "contexto" necessário para interagir com o DB.
     with app.app_context():
         # Cria as tabelas do banco de dados se elas ainda não existirem.
-        # Em um ambiente de produção real, é melhor usar migrações (ex: Flask-Migrate)
-        # para gerenciar o esquema do banco de dados de forma mais controlada.
         db.create_all()
     
-    # Inicia o servidor de desenvolvimento do Flask.
-    # A flag debug=True ativa o reloader, que causa o erro em ambientes de deploy.
-    # Esta linha SÓ será executada quando você rodar `python app.py` localmente.
+    # Inicia o servidor de DESENVOLVIMENTO do Flask.
+    # É este comando que causa o erro em plataformas de deploy.
     app.run(debug=True)
