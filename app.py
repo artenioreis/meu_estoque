@@ -78,12 +78,25 @@ def index():
 @app.route('/api/dados_graficos')
 @login_required
 def dados_graficos():
+    hoje = date.today()
+    sete_dias_atras = hoje - timedelta(days=6)
+
     produtos_top_estoque = db.session.query(Produto.nome, Produto.quantidade_estoque).order_by(Produto.quantidade_estoque.desc()).limit(5).all()
     contas_por_status = db.session.query(ContaPagar.status, func.count(ContaPagar.id)).group_by(ContaPagar.status).all()
     produtos_mais_vendidos = db.session.query(Produto.nome, func.sum(MovimentacaoEstoque.quantidade).label('total_vendido')).join(Produto).filter(MovimentacaoEstoque.tipo == 'saida', MovimentacaoEstoque.observacao == 'Venda PDV').group_by(Produto.nome).order_by(func.sum(MovimentacaoEstoque.quantidade).desc()).limit(5).all()
-    dados = {'estoque': {'labels': [p.nome for p in produtos_top_estoque], 'data': [p.quantidade_estoque for p in produtos_top_estoque]}, 'contas_pagar': {'labels': [s[0].capitalize() for s in contas_por_status], 'data': [s[1] for s in contas_por_status]}, 'mais_vendidos': {'labels': [p.nome for p in produtos_mais_vendidos], 'data': [int(p.total_vendido) for p in produtos_mais_vendidos]}}
-    return jsonify(dados)
+    vendas_ultimos_dias = db.session.query(func.strftime('%Y-%m-%d', MovimentacaoEstoque.data).label('dia'), func.sum(MovimentacaoEstoque.quantidade).label('total_quantidade')).filter(MovimentacaoEstoque.tipo == 'saida', MovimentacaoEstoque.observacao == 'Venda PDV', func.date(MovimentacaoEstoque.data) >= sete_dias_atras, func.date(MovimentacaoEstoque.data) <= hoje).group_by(func.strftime('%Y-%m-%d', MovimentacaoEstoque.data)).order_by(func.strftime('%Y-%m-%d', MovimentacaoEstoque.data)).all()
+    
+    dias_labels = [(sete_dias_atras + timedelta(days=i)).strftime("%d/%m") for i in range(7)]
+    vendas_dict = {dia: int(total) for dia, total in vendas_ultimos_dias}
+    vendas_data = [vendas_dict.get((sete_dias_atras + timedelta(days=i)).strftime("%Y-%m-%d"), 0) for i in range(7)]
 
+    dados = {
+        'estoque': {'labels': [p.nome for p in produtos_top_estoque], 'data': [p.quantidade_estoque for p in produtos_top_estoque]},
+        'contas_pagar': {'labels': [s[0].capitalize() for s in contas_por_status], 'data': [s[1] for s in contas_por_status]},
+        'mais_vendidos': {'labels': [p.nome for p in produtos_mais_vendidos], 'data': [int(p.total_vendido) for p in produtos_mais_vendidos]},
+        'vendas_diarias': {'labels': dias_labels, 'data': vendas_data}
+    }
+    return jsonify(dados)
 
 @app.route('/api/buscar_produto')
 @login_required
@@ -140,61 +153,6 @@ def finalizar_venda():
     db.session.commit()
     return render_template('cupom.html', itens_venda=itens_venda, total_venda=total_venda, data_venda=datetime.now(), cliente=cliente, forma_pagamento=forma_pagamento)
 
-# --- ROTAS DE PRODUTOS ---
-@app.route('/produtos')
-@login_required
-def listar_produtos():
-    search_term = request.args.get('q')
-    query = Produto.query
-    if search_term:
-        query = query.filter(or_(Produto.nome.ilike(f'%{search_term}%'), Produto.codigo.ilike(f'%{search_term}%')))
-    produtos = query.order_by(Produto.nome.asc()).all()
-    return render_template('produtos.html', produtos=produtos, search_term=search_term)
-
-@app.route('/produto/novo', methods=['GET', 'POST'])
-@login_required
-def adicionar_produto():
-    if request.method == 'POST':
-        data_fabricacao = datetime.strptime(request.form.get('data_fabricacao'), '%Y-%m-%d').date() if request.form.get('data_fabricacao') else None
-        data_vencimento = datetime.strptime(request.form.get('data_vencimento'), '%Y-%m-%d').date() if request.form.get('data_vencimento') else None
-        novo_produto = Produto(codigo=request.form['codigo'], nome=request.form['nome'], categoria=request.form.get('categoria'), preco_custo=float(request.form['preco_custo']), preco_venda=float(request.form['preco_venda']), quantidade_estoque=int(request.form['quantidade_estoque']), estoque_minimo=int(request.form['estoque_minimo']), fornecedor_id=request.form['fornecedor_id'], data_fabricacao=data_fabricacao, data_vencimento=data_vencimento)
-        db.session.add(novo_produto)
-        db.session.commit()
-        flash('Produto cadastrado com sucesso!', 'success')
-        return redirect(url_for('listar_produtos'))
-    fornecedores = Fornecedor.query.all()
-    return render_template('adicionar_produto.html', fornecedores=fornecedores)
-
-@app.route('/produto/editar/<int:id>', methods=['GET', 'POST'])
-@login_required
-def editar_produto(id):
-    produto = Produto.query.get_or_404(id)
-    if request.method == 'POST':
-        produto.codigo = request.form['codigo']
-        produto.nome = request.form['nome']
-        produto.categoria = request.form.get('categoria')
-        produto.preco_custo = float(request.form['preco_custo'])
-        produto.preco_venda = float(request.form['preco_venda'])
-        produto.quantidade_estoque = int(request.form['quantidade_estoque'])
-        produto.estoque_minimo = int(request.form['estoque_minimo'])
-        produto.fornecedor_id = request.form['fornecedor_id']
-        produto.data_fabricacao = datetime.strptime(request.form.get('data_fabricacao'), '%Y-%m-%d').date() if request.form.get('data_fabricacao') else None
-        produto.data_vencimento = datetime.strptime(request.form.get('data_vencimento'), '%Y-%m-%d').date() if request.form.get('data_vencimento') else None
-        db.session.commit()
-        flash('Produto atualizado com sucesso!', 'success')
-        return redirect(url_for('listar_produtos'))
-    fornecedores = Fornecedor.query.all()
-    return render_template('editar_produto.html', produto=produto, fornecedores=fornecedores)
-
-@app.route('/produto/excluir/<int:id>', methods=['POST'])
-@login_required
-def excluir_produto(id):
-    produto = Produto.query.get_or_404(id)
-    db.session.delete(produto)
-    db.session.commit()
-    flash('Produto excluído com sucesso!', 'danger')
-    return redirect(url_for('listar_produtos'))
-
 # --- ROTAS DE FORNECEDORES ---
 @app.route('/fornecedores')
 @login_required
@@ -212,6 +170,116 @@ def adicionar_fornecedor():
         flash('Fornecedor cadastrado com sucesso!', 'success')
         return redirect(url_for('listar_fornecedores'))
     return render_template('adicionar_fornecedor.html')
+
+# --- ROTAS DE PRODUTOS ---
+@app.route('/produtos')
+@login_required
+def listar_produtos():
+    search_term = request.args.get('q')
+    query = Produto.query
+    if search_term:
+        query = query.filter(or_(Produto.nome.ilike(f'%{search_term}%'), Produto.codigo.ilike(f'%{search_term}%')))
+    produtos = query.order_by(Produto.nome.asc()).all()
+    return render_template('produtos.html', produtos=produtos, search_term=search_term)
+
+@app.route('/produto/novo', methods=['GET', 'POST'])
+@login_required
+def adicionar_produto():
+    if request.method == 'POST':
+        codigo = request.form['codigo']
+        produto_existente = Produto.query.filter_by(codigo=codigo).first()
+        if produto_existente:
+            flash('Já existe um produto com este código. Por favor, utilize outro.', 'danger')
+            return redirect(url_for('adicionar_produto'))
+        data_fabricacao = datetime.strptime(request.form.get('data_fabricacao'), '%Y-%m-%d').date() if request.form.get('data_fabricacao') else None
+        data_vencimento = datetime.strptime(request.form.get('data_vencimento'), '%Y-%m-%d').date() if request.form.get('data_vencimento') else None
+        novo_produto = Produto(codigo=codigo, nome=request.form['nome'], categoria=request.form.get('categoria'), preco_custo=float(request.form['preco_custo']), preco_venda=float(request.form['preco_venda']), quantidade_estoque=int(request.form['quantidade_estoque']), estoque_minimo=int(request.form['estoque_minimo']), fornecedor_id=request.form['fornecedor_id'], data_fabricacao=data_fabricacao, data_vencimento=data_vencimento)
+        db.session.add(novo_produto)
+        db.session.commit()
+        flash('Produto cadastrado com sucesso!', 'success')
+        return redirect(url_for('listar_produtos'))
+    fornecedores = Fornecedor.query.all()
+    return render_template('adicionar_produto.html', fornecedores=fornecedores)
+
+@app.route('/produto/editar/<int:id>', methods=['GET', 'POST'])
+@login_required
+def editar_produto(id):
+    produto_para_editar = Produto.query.get_or_404(id)
+    if request.method == 'POST':
+        novo_codigo = request.form['codigo']
+        produto_existente = Produto.query.filter(Produto.codigo == novo_codigo, Produto.id != id).first()
+        if produto_existente:
+            flash('Já existe outro produto com este código. Por favor, utilize outro.', 'danger')
+            return redirect(url_for('editar_produto', id=id))
+        produto_para_editar.codigo = novo_codigo
+        produto_para_editar.nome = request.form['nome']
+        produto_para_editar.categoria = request.form.get('categoria')
+        produto_para_editar.preco_custo = float(request.form['preco_custo'])
+        produto_para_editar.preco_venda = float(request.form['preco_venda'])
+        produto_para_editar.quantidade_estoque = int(request.form['quantidade_estoque'])
+        produto_para_editar.estoque_minimo = int(request.form['estoque_minimo'])
+        produto_para_editar.fornecedor_id = request.form['fornecedor_id']
+        produto_para_editar.data_fabricacao = datetime.strptime(request.form.get('data_fabricacao'), '%Y-%m-%d').date() if request.form.get('data_fabricacao') else None
+        produto_para_editar.data_vencimento = datetime.strptime(request.form.get('data_vencimento'), '%Y-%m-%d').date() if request.form.get('data_vencimento') else None
+        db.session.commit()
+        flash('Produto atualizado com sucesso!', 'success')
+        return redirect(url_for('listar_produtos'))
+    fornecedores = Fornecedor.query.all()
+    return render_template('editar_produto.html', produto=produto_para_editar, fornecedores=fornecedores)
+
+@app.route('/produto/excluir/<int:id>', methods=['POST'])
+@login_required
+def excluir_produto(id):
+    produto = Produto.query.get_or_404(id)
+    db.session.delete(produto)
+    db.session.commit()
+    flash('Produto excluído com sucesso!', 'danger')
+    return redirect(url_for('listar_produtos'))
+
+# --- ROTAS DE CLIENTES ---
+@app.route('/clientes')
+@login_required
+def listar_clientes():
+    search_term = request.args.get('q')
+    query = Cliente.query
+    if search_term:
+        query = query.filter(or_(Cliente.nome.ilike(f'%{search_term}%'), Cliente.telefone.ilike(f'%{search_term}%')))
+    clientes = query.order_by(Cliente.nome.asc()).all()
+    return render_template('clientes.html', clientes=clientes, search_term=search_term)
+
+@app.route('/cliente/novo', methods=['GET', 'POST'])
+@login_required
+def adicionar_cliente():
+    if request.method == 'POST':
+        novo_cliente = Cliente(nome=request.form['nome'], telefone=request.form.get('telefone'), email=request.form.get('email'), endereco=request.form.get('endereco'))
+        db.session.add(novo_cliente)
+        db.session.commit()
+        flash('Cliente cadastrado com sucesso!', 'success')
+        return redirect(url_for('listar_clientes'))
+    return render_template('adicionar_cliente.html')
+
+@app.route('/cliente/editar/<int:id>', methods=['GET', 'POST'])
+@login_required
+def editar_cliente(id):
+    cliente = Cliente.query.get_or_404(id)
+    if request.method == 'POST':
+        cliente.nome = request.form['nome']
+        cliente.telefone = request.form.get('telefone')
+        cliente.email = request.form.get('email')
+        cliente.endereco = request.form.get('endereco')
+        db.session.commit()
+        flash('Cliente atualizado com sucesso!', 'success')
+        return redirect(url_for('listar_clientes'))
+    return render_template('editar_cliente.html', cliente=cliente)
+
+@app.route('/cliente/excluir/<int:id>', methods=['POST'])
+@login_required
+def excluir_cliente(id):
+    cliente = Cliente.query.get_or_404(id)
+    db.session.delete(cliente)
+    db.session.commit()
+    flash('Cliente excluído com sucesso!', 'danger')
+    return redirect(url_for('listar_clientes'))
 
 # --- ROTAS DE CONTAS A PAGAR ---
 @app.route('/contas')
@@ -289,69 +357,14 @@ def baixar_conta_receber(id):
     flash('Conta recebida com sucesso!', 'success')
     return redirect(url_for('listar_contas_receber'))
 
-# --- ROTAS DE CLIENTES ---
-@app.route('/clientes')
-@login_required
-def listar_clientes():
-    search_term = request.args.get('q')
-    query = Cliente.query
-    if search_term:
-        query = query.filter(or_(Cliente.nome.ilike(f'%{search_term}%'), Cliente.telefone.ilike(f'%{search_term}%')))
-    clientes = query.order_by(Cliente.nome.asc()).all()
-    return render_template('clientes.html', clientes=clientes, search_term=search_term)
-
-@app.route('/cliente/novo', methods=['GET', 'POST'])
-@login_required
-def adicionar_cliente():
-    if request.method == 'POST':
-        novo_cliente = Cliente(nome=request.form['nome'], telefone=request.form.get('telefone'), email=request.form.get('email'), endereco=request.form.get('endereco'))
-        db.session.add(novo_cliente)
-        db.session.commit()
-        flash('Cliente cadastrado com sucesso!', 'success')
-        return redirect(url_for('listar_clientes'))
-    return render_template('adicionar_cliente.html')
-
-@app.route('/cliente/editar/<int:id>', methods=['GET', 'POST'])
-@login_required
-def editar_cliente(id):
-    cliente = Cliente.query.get_or_404(id)
-    if request.method == 'POST':
-        cliente.nome = request.form['nome']
-        cliente.telefone = request.form.get('telefone')
-        cliente.email = request.form.get('email')
-        cliente.endereco = request.form.get('endereco')
-        db.session.commit()
-        flash('Cliente atualizado com sucesso!', 'success')
-        return redirect(url_for('listar_clientes'))
-    return render_template('editar_cliente.html', cliente=cliente)
-
-@app.route('/cliente/excluir/<int:id>', methods=['POST'])
-@login_required
-def excluir_cliente(id):
-    cliente = Cliente.query.get_or_404(id)
-    db.session.delete(cliente)
-    db.session.commit()
-    flash('Cliente excluído com sucesso!', 'danger')
-    return redirect(url_for('listar_clientes'))
-    
-# --- ROTA DE RELATÓRIOS ---
 @app.route('/relatorios')
 @login_required
 def relatorios():
     return render_template('relatorios.html')
 
-# --- 3. EXECUÇÃO DA APLICAÇÃO ---
+# --- 3. COMANDOS FINAIS ---
+with app.app_context():
+    db.create_all()
 
-# Este bloco só é executado quando você roda o script diretamente (ex: `python app.py`)
-# em seu computador local. Ele NUNCA é executado em um ambiente de produção correto
-# (como Render, Heroku, etc.), pois eles usam um servidor WSGI (Gunicorn) para
-# importar a variável `app` em vez de executar o arquivo.
 if __name__ == '__main__':
-    # Garante que o app tenha o "contexto" necessário para interagir com o DB.
-    with app.app_context():
-        # Cria as tabelas do banco de dados se elas ainda não existirem.
-        db.create_all()
-    
-    # Inicia o servidor de DESENVOLVIMENTO do Flask.
-    # É este comando que causa o erro em plataformas de deploy.
     app.run(debug=True)
