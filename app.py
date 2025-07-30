@@ -6,6 +6,7 @@ from functools import wraps
 from sqlalchemy import func, or_
 import json
 from dateutil.relativedelta import relativedelta
+import xml.etree.ElementTree as ET # Biblioteca para processar XML
 
 # --- 1. CONFIGURAÇÃO DA APLICAÇÃO ---
 app = Flask(__name__)
@@ -56,23 +57,14 @@ def index():
     hoje = date.today()
     amanha = hoje + timedelta(days=1)
     limite_vencimento = hoje + relativedelta(months=+2)
-    
     contas_vencidas = ContaPagar.query.filter(ContaPagar.status == 'pendente', ContaPagar.data_vencimento < hoje).all()
     contas_vencendo_hoje = ContaPagar.query.filter(ContaPagar.status == 'pendente', ContaPagar.data_vencimento == hoje).all()
     contas_vencendo_amanha = ContaPagar.query.filter(ContaPagar.status == 'pendente', ContaPagar.data_vencimento == amanha).all()
-    
+    outras_contas_pendentes = ContaPagar.query.filter(ContaPagar.status == 'pendente', ContaPagar.data_vencimento > amanha).order_by(ContaPagar.data_vencimento.asc()).all()
     produtos_estoque_baixo = Produto.query.filter(Produto.quantidade_estoque <= Produto.estoque_minimo).all()
     produtos_perto_vencer = Produto.query.filter(Produto.data_vencimento != None, Produto.data_vencimento >= hoje, Produto.data_vencimento <= limite_vencimento).order_by(Produto.data_vencimento.asc()).all()
-    
     contas_a_prazo_alertas = ContaReceber.query.filter(ContaReceber.status == 'Em Aberto').order_by(ContaReceber.data_venda.asc()).all()
-
-    return render_template('index.html', 
-                           produtos_alertas=produtos_estoque_baixo, 
-                           produtos_perto_vencer=produtos_perto_vencer,
-                           contas_vencidas=contas_vencidas,
-                           contas_vencendo_hoje=contas_vencendo_hoje,
-                           contas_vencendo_amanha=contas_vencendo_amanha,
-                           contas_a_prazo_alertas=contas_a_prazo_alertas)
+    return render_template('index.html', produtos_alertas=produtos_estoque_baixo, produtos_perto_vencer=produtos_perto_vencer, contas_vencidas=contas_vencidas, contas_vencendo_hoje=contas_vencendo_hoje, contas_vencendo_amanha=contas_vencendo_amanha, outras_contas_pendentes=outras_contas_pendentes, contas_a_prazo_alertas=contas_a_prazo_alertas)
 
 # --- ROTAS DA API ---
 @app.route('/api/dados_graficos')
@@ -80,22 +72,14 @@ def index():
 def dados_graficos():
     hoje = date.today()
     sete_dias_atras = hoje - timedelta(days=6)
-
     produtos_top_estoque = db.session.query(Produto.nome, Produto.quantidade_estoque).order_by(Produto.quantidade_estoque.desc()).limit(5).all()
     contas_por_status = db.session.query(ContaPagar.status, func.count(ContaPagar.id)).group_by(ContaPagar.status).all()
     produtos_mais_vendidos = db.session.query(Produto.nome, func.sum(MovimentacaoEstoque.quantidade).label('total_vendido')).join(Produto).filter(MovimentacaoEstoque.tipo == 'saida', MovimentacaoEstoque.observacao == 'Venda PDV').group_by(Produto.nome).order_by(func.sum(MovimentacaoEstoque.quantidade).desc()).limit(5).all()
     vendas_ultimos_dias = db.session.query(func.strftime('%Y-%m-%d', MovimentacaoEstoque.data).label('dia'), func.sum(MovimentacaoEstoque.quantidade).label('total_quantidade')).filter(MovimentacaoEstoque.tipo == 'saida', MovimentacaoEstoque.observacao == 'Venda PDV', func.date(MovimentacaoEstoque.data) >= sete_dias_atras, func.date(MovimentacaoEstoque.data) <= hoje).group_by(func.strftime('%Y-%m-%d', MovimentacaoEstoque.data)).order_by(func.strftime('%Y-%m-%d', MovimentacaoEstoque.data)).all()
-    
     dias_labels = [(sete_dias_atras + timedelta(days=i)).strftime("%d/%m") for i in range(7)]
     vendas_dict = {dia: int(total) for dia, total in vendas_ultimos_dias}
     vendas_data = [vendas_dict.get((sete_dias_atras + timedelta(days=i)).strftime("%Y-%m-%d"), 0) for i in range(7)]
-
-    dados = {
-        'estoque': {'labels': [p.nome for p in produtos_top_estoque], 'data': [p.quantidade_estoque for p in produtos_top_estoque]},
-        'contas_pagar': {'labels': [s[0].capitalize() for s in contas_por_status], 'data': [s[1] for s in contas_por_status]},
-        'mais_vendidos': {'labels': [p.nome for p in produtos_mais_vendidos], 'data': [int(p.total_vendido) for p in produtos_mais_vendidos]},
-        'vendas_diarias': {'labels': dias_labels, 'data': vendas_data}
-    }
+    dados = {'estoque': {'labels': [p.nome for p in produtos_top_estoque], 'data': [p.quantidade_estoque for p in produtos_top_estoque]}, 'contas_pagar': {'labels': [s[0].capitalize() for s in contas_por_status], 'data': [s[1] for s in contas_por_status]}, 'mais_vendidos': {'labels': [p.nome for p in produtos_mais_vendidos], 'data': [int(p.total_vendido) for p in produtos_mais_vendidos]}, 'vendas_diarias': {'labels': dias_labels, 'data': vendas_data}}
     return jsonify(dados)
 
 @app.route('/api/buscar_produto')
@@ -235,6 +219,51 @@ def excluir_produto(id):
     db.session.commit()
     flash('Produto excluído com sucesso!', 'danger')
     return redirect(url_for('listar_produtos'))
+
+@app.route('/produto/entrada_xml', methods=['GET', 'POST'])
+@login_required
+def entrada_xml():
+    if request.method == 'POST':
+        if 'xml_file' not in request.files:
+            flash('Nenhum ficheiro selecionado', 'warning')
+            return redirect(request.url)
+        file = request.files['xml_file']
+        if file.filename == '':
+            flash('Nenhum ficheiro selecionado', 'warning')
+            return redirect(request.url)
+        if file and file.filename.endswith('.xml'):
+            try:
+                xml_content = file.read().decode('utf-8')
+                root = ET.fromstring(xml_content)
+                ns = {'nfe': 'http://www.portalfiscal.inf.br/nfe'}
+                produtos_atualizados = []
+                produtos_nao_encontrados = []
+                for det in root.findall('.//nfe:det', ns):
+                    cProd_node = det.find('.//nfe:cProd', ns)
+                    qCom_node = det.find('.//nfe:qCom', ns)
+                    if cProd_node is not None and qCom_node is not None:
+                        cProd = cProd_node.text
+                        qCom = int(float(qCom_node.text))
+                        produto = Produto.query.filter_by(codigo=cProd).first()
+                        if produto:
+                            produto.quantidade_estoque += qCom
+                            movimento = MovimentacaoEstoque(produto_id=produto.id, tipo='entrada', quantidade=qCom, observacao='Entrada por XML NF-e')
+                            db.session.add(movimento)
+                            produtos_atualizados.append(f"{produto.nome} (+{qCom})")
+                        else:
+                            produtos_nao_encontrados.append(cProd)
+                db.session.commit()
+                if produtos_atualizados:
+                    flash(f'Entrada registada com sucesso para: {", ".join(produtos_atualizados)}', 'success')
+                if produtos_nao_encontrados:
+                    flash(f'Os seguintes códigos de produto não foram encontrados: {", ".join(produtos_nao_encontrados)}. Por favor, cadastre-os primeiro.', 'warning')
+                return redirect(url_for('listar_produtos'))
+            except ET.ParseError:
+                flash('Erro ao processar o ficheiro XML. Verifique se o formato é válido.', 'danger')
+            except Exception as e:
+                flash(f'Ocorreu um erro inesperado: {e}', 'danger')
+                return redirect(request.url)
+    return render_template('entrada_xml.html')
 
 # --- ROTAS DE CLIENTES ---
 @app.route('/clientes')

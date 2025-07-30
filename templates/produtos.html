@@ -6,7 +6,7 @@
 <style>
     /* Aplica o background à página de Estoque */
     body {
-        background-image: url('https://blog.mobi.com.br/wp-content/uploads/2023/11/blur-warehouse-com-bokeh-light-background.jpg');
+        background-image: url('https://snagel.com.br/wp-content/uploads/2020/01/gestao-de-estoque-como-manter-o-controle-dos-meus-produtos.jpg');
         background-size: cover;
         background-attachment: fixed;
     }
@@ -21,7 +21,12 @@
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h1>Produtos em Estoque</h1>
-    <a href="{{ url_for('adicionar_produto') }}" class="btn btn-primary">Adicionar Novo Produto</a>
+    <div>
+        <a href="{{ url_for('entrada_xml') }}" class="btn btn-info me-2">
+            <i class="fas fa-file-import"></i> Entrada por XML
+        </a>
+        <a href="{{ url_for('adicionar_produto') }}" class="btn btn-primary">Adicionar Novo Produto</a>
+    </div>
 </div>
 
 <!-- Formulário de Busca -->

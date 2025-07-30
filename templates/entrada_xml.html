@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+
+{% block title %}Entrada de Estoque por XML{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h3>Dar Entrada no Estoque por XML (NF-e)</h3>
+                </div>
+                <div class="card-body">
+                    <p class="card-text">Selecione o ficheiro XML da Nota Fiscal Eletrónica para dar entrada automática nos produtos correspondentes no seu estoque.</p>
+                    <p class="text-muted"><small>Apenas os produtos que já estão cadastrados no sistema (com o mesmo código do XML) serão atualizados.</small></p>
+                    <hr>
+                    <form method="post" enctype="multipart/form-data">
+                        <div class="mb-3">
+                            <label for="xml_file" class="form-label">Ficheiro XML da NF-e</label>
+                            <input class="form-control" type="file" id="xml_file" name="xml_file" accept=".xml" required>
+                        </div>
+                        <div class="d-flex justify-content-end">
+                            <a href="{{ url_for('listar_produtos') }}" class="btn btn-secondary me-2">Cancelar</a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-upload"></i> Processar XML
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
