@@ -6,13 +6,13 @@
 <style>
     /* Aplica o background à página de Relatórios */
     body {
-        background-image: url('https://blog.qualityautomacao.com.br/wp-content/uploads/2025/06/capa_artigo-768x361.jpg');
+        background-image: url('https://www.indiafilings.com/learn/wp-content/uploads/2022/05/Scrutiny-Assessment.jpg');
         background-size: cover;
         background-attachment: fixed;
     }
     /* Adiciona um efeito de vidro nos cards para melhorar a legibilidade */
     .card {
-        background-color: rgba(245, 240, 240, 0.95);
+        background-color: rgba(255, 255, 255, 0.95);
         backdrop-filter: blur(5px);
     }
 </style>
@@ -24,21 +24,21 @@
 
 <div class="row">
     <!-- Coluna de Relatórios de Estoque -->
-    <div class="col-md-6">
+    <div class="col-md-6 mb-4">
         <div class="card">
             <div class="card-header">
                 <i class="fas fa-boxes"></i> Relatórios de Estoque
             </div>
             <div class="list-group list-group-flush">
-                <a href="#" class="list-group-item list-group-item-action">
+                <a href="{{ url_for('relatorio_estoque') }}" class="list-group-item list-group-item-action">
                     <strong>Inventário Completo</strong>
                     <small class="d-block text-muted">Lista todos os produtos, quantidades e valores.</small>
                 </a>
-                <a href="#" class="list-group-item list-group-item-action list-group-item-warning">
+                <a href="{{ url_for('relatorio_estoque_baixo') }}" class="list-group-item list-group-item-action">
                     <strong>Produtos com Estoque Baixo</strong>
                     <small class="d-block text-muted">Mostra todos os produtos abaixo do nível mínimo definido.</small>
                 </a>
-                <a href="#" class="list-group-item list-group-item-action">
+                <a href="{{ url_for('relatorio_movimentacoes') }}" class="list-group-item list-group-item-action">
                     <strong>Histórico de Movimentações</strong>
                     <small class="d-block text-muted">Detalha todas as entradas e saídas de estoque por período.</small>
                 </a>
@@ -47,23 +47,23 @@
     </div>
 
     <!-- Coluna de Relatórios Financeiros -->
-    <div class="col-md-6">
+    <div class="col-md-6 mb-4">
         <div class="card">
             <div class="card-header">
                 <i class="fas fa-dollar-sign"></i> Relatórios Financeiros
             </div>
             <div class="list-group list-group-flush">
-                <a href="#" class="list-group-item list-group-item-action">
-                    <strong>Contas a Pagar (Pendentes)</strong>
-                    <small class="d-block text-muted">Exibe todas as contas com status 'pendente', ordenadas por vencimento.</small>
+                <a href="{{ url_for('relatorio_contas_receber') }}" class="list-group-item list-group-item-action">
+                    <strong>Contas a Receber</strong>
+                    <small class="d-block text-muted">Exibe todas as contas a receber, com filtros por status.</small>
                 </a>
-                <a href="#" class="list-group-item list-group-item-action">
-                    <strong>Contas Pagas</strong>
-                    <small class="d-block text-muted">Filtra contas pagas por um período específico.</small>
+                <a href="{{ url_for('relatorio_contas_pagar') }}" class="list-group-item list-group-item-action">
+                    <strong>Contas a Pagar</strong>
+                    <small class="d-block text-muted">Exibe todas as contas a pagar, ordenadas por vencimento.</small>
                 </a>
-                <a href="#" class="list-group-item list-group-item-action">
+                <a href="{{ url_for('relatorio_despesas_fornecedor') }}" class="list-group-item list-group-item-action">
                     <strong>Despesas por Fornecedor</strong>
-                    <small class="d-block text-muted">Agrupa o total de despesas para cada fornecedor.</small>
+                    <small class="d-block text-muted">Agrupa o total de despesas (contas pagas) para cada fornecedor.</small>
                 </a>
             </div>
         </div>

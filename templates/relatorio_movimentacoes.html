@@ -1,0 +1,97 @@
+{% extends 'base.html' %}
+
+{% block title %}Relatório de Movimentações de Estoque{% endblock %}
+
+{% block extra_styles %}
+<style>
+    /* Estilos para impressão */
+    @media print {
+        body { background: none !important; }
+        .no-print { display: none !important; }
+        .card { box-shadow: none !important; border: 1px solid #dee2e6 !important; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 no-print">
+    <h1>Relatório de Movimentações de Estoque</h1>
+    <button onclick="window.print()" class="btn btn-primary">
+        <i class="fas fa-print"></i> Imprimir Relatório
+    </button>
+</div>
+
+<!-- Filtro de Período -->
+<div class="card mb-4 no-print">
+    <div class="card-body">
+        <form method="POST" action="{{ url_for('relatorio_movimentacoes') }}">
+            <div class="row align-items-end">
+                <div class="col-md-5">
+                    <label for="start_date" class="form-label">Data de Início</label>
+                    <input type="date" class="form-control" id="start_date" name="start_date" value="{{ start_date.strftime('%Y-%m-%d') if start_date else '' }}" required>
+                </div>
+                <div class="col-md-5">
+                    <label for="end_date" class="form-label">Data de Fim</label>
+                    <input type="date" class="form-control" id="end_date" name="end_date" value="{{ end_date.strftime('%Y-%m-%d') if end_date else '' }}" required>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-secondary w-100">Filtrar</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+
+<div class="card">
+    <div class="card-header">
+        <div class="d-flex justify-content-between">
+            <span>
+                Histórico de Movimentações
+                {% if start_date and end_date %}
+                    - Período: {{ start_date.strftime('%d/%m/%Y') }} a {{ end_date.strftime('%d/%m/%Y') }}
+                {% else %}
+                    - Todos os Períodos
+                {% endif %}
+            </span>
+            <span class="text-muted">Emitido em: {{ data_emissao.strftime('%d/%m/%Y %H:%M') }}</span>
+        </div>
+    </div>
+    <div class="card-body">
+        <table class="table table-striped table-bordered">
+            <thead class="table-light">
+                <tr>
+                    <th>Data</th>
+                    <th>Produto</th>
+                    <th class="text-center">Tipo</th>
+                    <th class="text-center">Quantidade</th>
+                    <th>Cliente</th>
+                    <th>Observação</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for movimento in movimentacoes %}
+                <tr>
+                    <td>{{ movimento.data.strftime('%d/%m/%Y %H:%M') }}</td>
+                    <td>{{ movimento.produto.nome }}</td>
+                    <td class="text-center">
+                        {% if movimento.tipo == 'entrada' %}
+                            <span class="badge bg-success">Entrada</span>
+                        {% else %}
+                            <span class="badge bg-danger">Saída</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-center">{{ movimento.quantidade }}</td>
+                    <td>{{ movimento.cliente.nome if movimento.cliente else 'N/A' }}</td>
+                    <td>{{ movimento.observacao or 'N/A' }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" class="text-center text-muted">Nenhuma movimentação encontrada.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

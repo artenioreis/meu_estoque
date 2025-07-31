@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+
+{% block title %}Relatório de Despesas por Fornecedor{% endblock %}
+
+{% block extra_styles %}
+<style>
+    /* Estilos para impressão */
+    @media print {
+        body { background: none !important; }
+        .no-print { display: none !important; }
+        .card { box-shadow: none !important; border: 1px solid #dee2e6 !important; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 no-print">
+    <h1>Relatório de Despesas por Fornecedor</h1>
+    <button onclick="window.print()" class="btn btn-primary">
+        <i class="fas fa-print"></i> Imprimir Relatório
+    </button>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <div class="d-flex justify-content-between">
+            <span>Total de Despesas (Contas Pagas) Agrupado por Fornecedor</span>
+            <span class="text-muted">Emitido em: {{ data_emissao.strftime('%d/%m/%Y %H:%M') }}</span>
+        </div>
+    </div>
+    <div class="card-body">
+        <table class="table table-striped table-bordered">
+            <thead class="table-light">
+                <tr>
+                    <th>Fornecedor</th>
+                    <th class="text-end">Valor Total Gasto</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for despesa in despesas %}
+                <tr>
+                    <td>{{ despesa.nome }}</td>
+                    <td class="text-end">R$ {{ "%.2f"|format(despesa.total_gasto) }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="2" class="text-center text-muted">Nenhuma despesa encontrada.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot>
+                <tr class="table-dark">
+                    <td class="text-end"><strong>Valor Total Geral:</strong></td>
+                    <td class="text-end"><strong>R$ {{ "%.2f"|format(valor_total_geral) }}</strong></td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+</div>
+{% endblock %}

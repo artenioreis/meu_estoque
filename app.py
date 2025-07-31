@@ -1,12 +1,13 @@
 # app.py
 from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify
-from models import db, Fornecedor, Produto, MovimentacaoEstoque, ContaPagar, Cliente, ContaReceber
+from models import db, Fornecedor, Produto, MovimentacaoEstoque, ContaPagar, Cliente, ContaReceber, XmlImportado
 from datetime import datetime, date, timedelta
 from functools import wraps
 from sqlalchemy import func, or_
+from sqlalchemy.orm import joinedload
 import json
 from dateutil.relativedelta import relativedelta
-import xml.etree.ElementTree as ET # Biblioteca para processar XML
+import xml.etree.ElementTree as ET
 
 # --- 1. CONFIGURAÇÃO DA APLICAÇÃO ---
 app = Flask(__name__)
@@ -112,21 +113,21 @@ def finalizar_venda():
     forma_pagamento = request.form.get('forma_pagamento')
     cliente = None
     if cliente_id:
-        cliente = Cliente.query.get(cliente_id)
+        cliente = db.session.get(Cliente, cliente_id)
     if not venda_data_str:
         flash('Nenhum item na venda.', 'warning')
         return redirect(url_for('pdv'))
     itens_venda = json.loads(venda_data_str)
     total_venda = 0
     for item in itens_venda:
-        produto = Produto.query.get(item['id'])
+        produto = db.session.get(Produto, item['id'])
         if produto and produto.quantidade_estoque >= item['quantidade']:
             produto.quantidade_estoque -= item['quantidade']
             movimento = MovimentacaoEstoque(produto_id=produto.id, tipo='saida', quantidade=item['quantidade'], observacao='Venda PDV', cliente_id=cliente_id)
             db.session.add(movimento)
             total_venda += item['quantidade'] * item['preco_venda']
         else:
-            flash(f'Estoque insuficiente para o produto {produto.nome}.', 'danger')
+            flash(f'Estoque insuficiente para o produto {produto.nome if produto else "desconhecido"}.', 'danger')
             return redirect(url_for('pdv'))
     if cliente_id:
         nova_conta_receber = ContaReceber(cliente_id=cliente_id, valor=total_venda, forma_pagamento=forma_pagamento)
@@ -188,7 +189,7 @@ def adicionar_produto():
 @app.route('/produto/editar/<int:id>', methods=['GET', 'POST'])
 @login_required
 def editar_produto(id):
-    produto_para_editar = Produto.query.get_or_404(id)
+    produto_para_editar = db.session.get(Produto, id)
     if request.method == 'POST':
         novo_codigo = request.form['codigo']
         produto_existente = Produto.query.filter(Produto.codigo == novo_codigo, Produto.id != id).first()
@@ -214,7 +215,7 @@ def editar_produto(id):
 @app.route('/produto/excluir/<int:id>', methods=['POST'])
 @login_required
 def excluir_produto(id):
-    produto = Produto.query.get_or_404(id)
+    produto = db.session.get(Produto, id)
     db.session.delete(produto)
     db.session.commit()
     flash('Produto excluído com sucesso!', 'danger')
@@ -233,35 +234,41 @@ def entrada_xml():
             return redirect(request.url)
         if file and file.filename.endswith('.xml'):
             try:
-                xml_content = file.read().decode('utf-8')
+                xml_content = file.read()
                 root = ET.fromstring(xml_content)
                 ns = {'nfe': 'http://www.portalfiscal.inf.br/nfe'}
+                infNFe_node = root.find('.//nfe:infNFe', ns)
+                if infNFe_node is None or 'Id' not in infNFe_node.attrib:
+                    flash('XML inválido: não foi possível encontrar a chave da NF-e (infNFe).', 'danger')
+                    return redirect(request.url)
+                chave_nfe = infNFe_node.attrib['Id'].replace('NFe', '')
+                xml_existente = XmlImportado.query.filter_by(chave_nfe=chave_nfe).first()
+                if xml_existente:
+                    flash(f'ERRO: Este XML (Chave: {chave_nfe}) já foi importado em {xml_existente.data_importacao.strftime("%d/%m/%Y")}.', 'danger')
+                    return redirect(url_for('listar_produtos'))
                 produtos_atualizados = []
                 produtos_nao_encontrados = []
                 for det in root.findall('.//nfe:det', ns):
-                    cProd_node = det.find('.//nfe:cProd', ns)
-                    qCom_node = det.find('.//nfe:qCom', ns)
-                    if cProd_node is not None and qCom_node is not None:
-                        cProd = cProd_node.text
-                        qCom = int(float(qCom_node.text))
-                        produto = Produto.query.filter_by(codigo=cProd).first()
-                        if produto:
-                            produto.quantidade_estoque += qCom
-                            movimento = MovimentacaoEstoque(produto_id=produto.id, tipo='entrada', quantidade=qCom, observacao='Entrada por XML NF-e')
-                            db.session.add(movimento)
-                            produtos_atualizados.append(f"{produto.nome} (+{qCom})")
-                        else:
-                            produtos_nao_encontrados.append(cProd)
+                    cProd = det.find('.//nfe:cProd', ns).text
+                    qCom = int(float(det.find('.//nfe:qCom', ns).text))
+                    produto = Produto.query.filter_by(codigo=cProd).first()
+                    if produto:
+                        produto.quantidade_estoque += qCom
+                        movimento = MovimentacaoEstoque(produto_id=produto.id, tipo='entrada', quantidade=qCom, observacao=f'Entrada por XML ({file.filename})')
+                        db.session.add(movimento)
+                        produtos_atualizados.append(f"{produto.nome} (+{qCom})")
+                    else:
+                        produtos_nao_encontrados.append(cProd)
+                novo_registro_xml = XmlImportado(chave_nfe=chave_nfe, nome_arquivo=file.filename)
+                db.session.add(novo_registro_xml)
                 db.session.commit()
                 if produtos_atualizados:
                     flash(f'Entrada registada com sucesso para: {", ".join(produtos_atualizados)}', 'success')
                 if produtos_nao_encontrados:
                     flash(f'Os seguintes códigos de produto não foram encontrados: {", ".join(produtos_nao_encontrados)}. Por favor, cadastre-os primeiro.', 'warning')
                 return redirect(url_for('listar_produtos'))
-            except ET.ParseError:
-                flash('Erro ao processar o ficheiro XML. Verifique se o formato é válido.', 'danger')
             except Exception as e:
-                flash(f'Ocorreu um erro inesperado: {e}', 'danger')
+                flash(f'Ocorreu um erro inesperado ao processar o XML: {e}', 'danger')
                 return redirect(request.url)
     return render_template('entrada_xml.html')
 
@@ -290,7 +297,7 @@ def adicionar_cliente():
 @app.route('/cliente/editar/<int:id>', methods=['GET', 'POST'])
 @login_required
 def editar_cliente(id):
-    cliente = Cliente.query.get_or_404(id)
+    cliente = db.session.get(Cliente, id)
     if request.method == 'POST':
         cliente.nome = request.form['nome']
         cliente.telefone = request.form.get('telefone')
@@ -304,7 +311,7 @@ def editar_cliente(id):
 @app.route('/cliente/excluir/<int:id>', methods=['POST'])
 @login_required
 def excluir_cliente(id):
-    cliente = Cliente.query.get_or_404(id)
+    cliente = db.session.get(Cliente, id)
     db.session.delete(cliente)
     db.session.commit()
     flash('Cliente excluído com sucesso!', 'danger')
@@ -336,7 +343,7 @@ def adicionar_conta():
 @app.route('/conta/editar/<int:id>', methods=['GET', 'POST'])
 @login_required
 def editar_conta(id):
-    conta = ContaPagar.query.get_or_404(id)
+    conta = db.session.get(ContaPagar, id)
     if request.method == 'POST':
         conta.fornecedor_id = request.form['fornecedor_id']
         conta.descricao = request.form['descricao']
@@ -353,7 +360,7 @@ def editar_conta(id):
 @app.route('/conta/excluir/<int:id>', methods=['POST'])
 @login_required
 def excluir_conta(id):
-    conta = ContaPagar.query.get_or_404(id)
+    conta = db.session.get(ContaPagar, id)
     db.session.delete(conta)
     db.session.commit()
     flash('Conta excluída com sucesso!', 'danger')
@@ -362,7 +369,7 @@ def excluir_conta(id):
 @app.route('/conta/pagar/<int:id>', methods=['POST'])
 @login_required
 def pagar_conta(id):
-    conta = ContaPagar.query.get_or_404(id)
+    conta = db.session.get(ContaPagar, id)
     conta.status = 'pago'
     conta.data_pagamento = datetime.utcnow().date()
     db.session.commit()
@@ -379,17 +386,77 @@ def listar_contas_receber():
 @app.route('/conta_receber/baixar/<int:id>', methods=['POST'])
 @login_required
 def baixar_conta_receber(id):
-    conta = ContaReceber.query.get_or_404(id)
+    conta = db.session.get(ContaReceber, id)
     conta.status = 'Recebido'
     conta.data_recebimento = date.today()
     db.session.commit()
     flash('Conta recebida com sucesso!', 'success')
     return redirect(url_for('listar_contas_receber'))
 
+# --- ROTA DE RELATÓRIOS ---
 @app.route('/relatorios')
 @login_required
 def relatorios():
     return render_template('relatorios.html')
+
+@app.route('/relatorio/estoque')
+@login_required
+def relatorio_estoque():
+    produtos = Produto.query.order_by(Produto.nome.asc()).all()
+    valor_total_estoque = sum(p.quantidade_estoque * p.preco_custo for p in produtos)
+    return render_template('relatorio_estoque.html', produtos=produtos, valor_total_estoque=valor_total_estoque, data_emissao=datetime.now())
+
+@app.route('/relatorio/estoque_baixo')
+@login_required
+def relatorio_estoque_baixo():
+    produtos = Produto.query.filter(Produto.quantidade_estoque <= Produto.estoque_minimo).order_by(Produto.nome.asc()).all()
+    return render_template('relatorio_estoque_baixo.html', produtos=produtos, data_emissao=datetime.now())
+
+@app.route('/relatorio/movimentacoes', methods=['GET', 'POST'])
+@login_required
+def relatorio_movimentacoes():
+    query = MovimentacaoEstoque.query.options(joinedload(MovimentacaoEstoque.produto), joinedload(MovimentacaoEstoque.cliente))
+    start_date_str = request.form.get('start_date')
+    end_date_str = request.form.get('end_date')
+    start_date, end_date = None, None
+    if request.method == 'POST' and start_date_str and end_date_str:
+        try:
+            start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
+            end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
+            query = query.filter(func.date(MovimentacaoEstoque.data).between(start_date, end_date))
+        except ValueError:
+            flash('Formato de data inválido. Por favor, use AAAA-MM-DD.', 'danger')
+    movimentacoes = query.order_by(MovimentacaoEstoque.data.desc()).all()
+    return render_template('relatorio_movimentacoes.html', movimentacoes=movimentacoes, data_emissao=datetime.now(), start_date=start_date, end_date=end_date)
+
+@app.route('/relatorio/contas_receber', methods=['GET', 'POST'])
+@login_required
+def relatorio_contas_receber():
+    query = ContaReceber.query.options(joinedload(ContaReceber.cliente))
+    status_filter = request.form.get('status_filter', 'todos')
+    if status_filter != 'todos':
+        query = query.filter(ContaReceber.status == status_filter)
+    contas = query.order_by(ContaReceber.data_venda.desc()).all()
+    valor_total = sum(c.valor for c in contas)
+    return render_template('relatorio_contas_receber.html', contas=contas, valor_total=valor_total, status_filter=status_filter, data_emissao=datetime.now())
+
+@app.route('/relatorio/contas_pagar', methods=['GET', 'POST'])
+@login_required
+def relatorio_contas_pagar():
+    query = ContaPagar.query.options(joinedload(ContaPagar.fornecedor))
+    status_filter = request.form.get('status_filter', 'pendente')
+    if status_filter != 'todos':
+        query = query.filter(ContaPagar.status == status_filter)
+    contas = query.order_by(ContaPagar.data_vencimento.asc()).all()
+    valor_total = sum(c.valor for c in contas)
+    return render_template('relatorio_contas_pagar.html', contas=contas, valor_total=valor_total, status_filter=status_filter, data_emissao=datetime.now())
+
+@app.route('/relatorio/despesas_fornecedor')
+@login_required
+def relatorio_despesas_fornecedor():
+    despesas = db.session.query(Fornecedor.nome, func.sum(ContaPagar.valor).label('total_gasto')).join(ContaPagar).filter(ContaPagar.status == 'pago').group_by(Fornecedor.nome).order_by(func.sum(ContaPagar.valor).desc()).all()
+    valor_total_geral = sum(d.total_gasto for d in despesas)
+    return render_template('relatorio_despesas_fornecedor.html', despesas=despesas, valor_total_geral=valor_total_geral, data_emissao=datetime.now())
 
 # --- 3. COMANDOS FINAIS ---
 with app.app_context():
