@@ -280,12 +280,20 @@ def entrada_xml():
                     flash('XML inválido: não foi possível encontrar a chave da NF-e (infNFe).', 'danger')
                     return redirect(request.url)
                 chave_nfe = infNFe_node.attrib['Id'].replace('NFe', '')
-                xml_existente = XmlImportado.query.filter_by(chave_nfe=chave_nfe).first()
-                if xml_existente:
-                    flash(f'ERRO: Este XML (Chave: {chave_nfe}) já foi importado em {xml_existente.data_importacao.strftime("%d/%m/%Y")}.', 'danger')
+                if XmlImportado.query.filter_by(chave_nfe=chave_nfe).first():
+                    flash(f'ERRO: Este XML (Chave: {chave_nfe[:10]}...) já foi importado anteriormente.', 'danger')
                     return redirect(url_for('listar_produtos'))
-                produtos_atualizados = []
-                produtos_nao_encontrados = []
+                cnpj_emitente_node = root.find('.//nfe:emit/nfe:CNPJ', ns)
+                if cnpj_emitente_node is None:
+                    flash('XML inválido: CNPJ do emitente não encontrado.', 'danger')
+                    return redirect(request.url)
+                cnpj_emitente = cnpj_emitente_node.text
+                fornecedor = Fornecedor.query.filter_by(cnpj=cnpj_emitente).first()
+                if not fornecedor:
+                    nome_fornecedor = root.find('.//nfe:emit/nfe:xNome', ns).text
+                    flash(f'Fornecedor "{nome_fornecedor}" (CNPJ: {cnpj_emitente}) não encontrado. Por favor, cadastre-o primeiro com o CNPJ correto e tente novamente.', 'danger')
+                    return redirect(url_for('adicionar_fornecedor'))
+                produtos_atualizados, produtos_nao_encontrados = [], []
                 for det in root.findall('.//nfe:det', ns):
                     cProd = det.find('.//nfe:cProd', ns).text
                     qCom = int(float(det.find('.//nfe:qCom', ns).text))
@@ -297,16 +305,27 @@ def entrada_xml():
                         produtos_atualizados.append(f"{produto.nome} (+{qCom})")
                     else:
                         produtos_nao_encontrados.append(cProd)
+                valor_total_nfe_node = root.find('.//nfe:ICMSTot/nfe:vNF', ns)
+                if valor_total_nfe_node is None:
+                    flash('XML inválido: Valor total da nota (vNF) não encontrado.', 'danger')
+                    return redirect(request.url)
+                valor_total_nfe = float(valor_total_nfe_node.text)
+                venc_node = root.find('.//nfe:dup/nfe:dVenc', ns)
+                data_vencimento = datetime.strptime(venc_node.text, '%Y-%m-%d').date() if venc_node is not None else date.today() + timedelta(days=30)
+                nova_conta = ContaPagar(fornecedor_id=fornecedor.id, descricao=f"Ref. NF-e chave: {chave_nfe[:10]}...", valor=valor_total_nfe, data_vencimento=data_vencimento)
+                db.session.add(nova_conta)
                 novo_registro_xml = XmlImportado(chave_nfe=chave_nfe, nome_arquivo=file.filename)
                 db.session.add(novo_registro_xml)
                 db.session.commit()
                 if produtos_atualizados:
                     flash(f'Entrada registada com sucesso para: {", ".join(produtos_atualizados)}', 'success')
                 if produtos_nao_encontrados:
-                    flash(f'Os seguintes códigos de produto não foram encontrados: {", ".join(produtos_nao_encontrados)}. Por favor, cadastre-os primeiro.', 'warning')
+                    flash(f'Os seguintes códigos de produto não foram encontrados: {", ".join(produtos_nao_encontrados)}.', 'warning')
+                flash(f'Conta a pagar no valor de R$ {valor_total_nfe:.2f} para {fornecedor.nome} lançada com sucesso.', 'info')
                 return redirect(url_for('listar_produtos'))
             except Exception as e:
                 flash(f'Ocorreu um erro inesperado ao processar o XML: {e}', 'danger')
+                db.session.rollback()
                 return redirect(request.url)
     return render_template('entrada_xml.html')
 
@@ -502,3 +521,4 @@ with app.app_context():
 
 if __name__ == '__main__':
     app.run(debug=True)
+
