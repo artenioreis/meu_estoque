@@ -5,7 +5,7 @@
 {% block extra_styles %}
 <style>
     body {
-        background-image: url('https://wake.tech/wp-content/uploads/2024/06/Capa_4.png.webp');
+        background-image: url('https://img.freepik.com/fotos-premium/fundo-de-textura-de-papel-rosa-claro_164935-252.jpg');
         background-size: cover;
         background-attachment: fixed;
     }
@@ -81,12 +81,22 @@
 
                     <!-- SELEÇÃO DA FORMA DE PAGAMENTO -->
                     <div class="my-3">
-                        <label class="form-label">Forma de Pagamento</label>
-                        <select name="forma_pagamento" class="form-select" required>
+                        <label for="formaPagamento" class="form-label">Forma de Pagamento</label>
+                        <select name="forma_pagamento" id="formaPagamento" class="form-select" required>
                             <option value="Dinheiro">Dinheiro</option>
                             <option value="Pix">Pix</option>
                             <option value="Cartão">Cartão</option>
                             <option value="A Prazo">A Prazo</option>
+                        </select>
+                    </div>
+
+                    <!-- CAMPO DE PARCELAS (aparece dinamicamente) -->
+                    <div class="my-3" id="campoParcelas" style="display: none;">
+                        <label for="parcelas" class="form-label">Número de Parcelas</label>
+                        <select name="parcelas" id="parcelas" class="form-select">
+                            {% for i in range(1, 11) %}
+                                <option value="{{ i }}">{{ i }}x</option>
+                            {% endfor %}
                         </select>
                     </div>
 
@@ -116,6 +126,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const clienteSelecionadoDiv = document.getElementById('clienteSelecionado');
     const nomeClienteSpan = document.getElementById('nomeCliente');
     const removerClienteBtn = document.getElementById('removerCliente');
+    const formaPagamentoSelect = document.getElementById('formaPagamento');
+    const campoParcelasDiv = document.getElementById('campoParcelas');
     
     // URLs das APIs
     const produtoApiUrl = "{{ url_for('buscar_produto') }}";
@@ -222,9 +234,22 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
+    formaPagamentoSelect.addEventListener('change', function() {
+        if (this.value === 'A Prazo') {
+            campoParcelasDiv.style.display = 'block';
+        } else {
+            campoParcelasDiv.style.display = 'none';
+        }
+    });
+
     formVenda.addEventListener('submit', function(event) {
         if (vendaItens.length === 0) {
             alert("Adicione pelo menos um item à venda antes de finalizar.");
+            event.preventDefault();
+            return;
+        }
+        if (formaPagamentoSelect.value === 'A Prazo' && !clienteIdInput.value) {
+            alert("É necessário selecionar um cliente para vendas a prazo.");
             event.preventDefault();
             return;
         }

@@ -111,32 +111,62 @@ def finalizar_venda():
     venda_data_str = request.form.get('venda_data')
     cliente_id = request.form.get('cliente_id')
     forma_pagamento = request.form.get('forma_pagamento')
+    num_parcelas = 0
+    
     cliente = None
     if cliente_id:
         cliente = db.session.get(Cliente, cliente_id)
+    
     if not venda_data_str:
         flash('Nenhum item na venda.', 'warning')
         return redirect(url_for('pdv'))
+    
     itens_venda = json.loads(venda_data_str)
-    total_venda = 0
+    total_venda = sum(item['quantidade'] * item['preco_venda'] for item in itens_venda)
+
     for item in itens_venda:
         produto = db.session.get(Produto, item['id'])
-        if produto and produto.quantidade_estoque >= item['quantidade']:
-            produto.quantidade_estoque -= item['quantidade']
-            movimento = MovimentacaoEstoque(produto_id=produto.id, tipo='saida', quantidade=item['quantidade'], observacao='Venda PDV', cliente_id=cliente_id)
-            db.session.add(movimento)
-            total_venda += item['quantidade'] * item['preco_venda']
-        else:
+        if not (produto and produto.quantidade_estoque >= item['quantidade']):
             flash(f'Estoque insuficiente para o produto {produto.nome if produto else "desconhecido"}.', 'danger')
             return redirect(url_for('pdv'))
+        produto.quantidade_estoque -= item['quantidade']
+        movimento = MovimentacaoEstoque(produto_id=produto.id, tipo='saida', quantidade=item['quantidade'], observacao='Venda PDV', cliente_id=cliente_id)
+        db.session.add(movimento)
+
     if cliente_id:
-        nova_conta_receber = ContaReceber(cliente_id=cliente_id, valor=total_venda, forma_pagamento=forma_pagamento)
-        if forma_pagamento in ['Dinheiro', 'Pix', 'Cartão']:
-            nova_conta_receber.status = 'Recebido'
-            nova_conta_receber.data_recebimento = date.today()
-        db.session.add(nova_conta_receber)
+        if forma_pagamento == 'A Prazo':
+            num_parcelas = int(request.form.get('parcelas', 1))
+            valor_parcela = round(total_venda / num_parcelas, 2)
+            
+            for i in range(1, num_parcelas + 1):
+                data_vencimento = date.today() + relativedelta(months=+i)
+                nova_conta = ContaReceber(
+                    cliente_id=cliente_id,
+                    valor=valor_parcela,
+                    data_venda=date.today(),
+                    data_recebimento=data_vencimento,
+                    status='Em Aberto',
+                    forma_pagamento=f'A Prazo ({i}/{num_parcelas})'
+                )
+                db.session.add(nova_conta)
+        else:
+            nova_conta = ContaReceber(
+                cliente_id=cliente_id,
+                valor=total_venda,
+                forma_pagamento=forma_pagamento,
+                status='Recebido',
+                data_recebimento=date.today()
+            )
+            db.session.add(nova_conta)
+
     db.session.commit()
-    return render_template('cupom.html', itens_venda=itens_venda, total_venda=total_venda, data_venda=datetime.now(), cliente=cliente, forma_pagamento=forma_pagamento)
+    return render_template('cupom.html', 
+                           itens_venda=itens_venda, 
+                           total_venda=total_venda, 
+                           data_venda=datetime.now(), 
+                           cliente=cliente, 
+                           forma_pagamento=forma_pagamento,
+                           num_parcelas=num_parcelas)
 
 # --- ROTAS DE FORNECEDORES ---
 @app.route('/fornecedores')
@@ -521,4 +551,3 @@ with app.app_context():
 
 if __name__ == '__main__':
     app.run(debug=True)
-
