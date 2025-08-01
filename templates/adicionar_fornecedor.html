@@ -11,12 +11,18 @@
         <input type="text" class="form-control" id="nome" name="nome" required>
     </div>
     <div class="mb-3">
-        <label for="telefone" class="form-label">Telefone (Opcional)</label>
-        <input type="text" class="form-control" id="telefone" name="telefone">
+        <label for="cnpj" class="form-label">CNPJ</label>
+        <input type="text" class="form-control" id="cnpj" name="cnpj" placeholder="XX.XXX.XXX/XXXX-XX">
     </div>
-    <div class="mb-3">
-        <label for="email" class="form-label">Email (Opcional)</label>
-        <input type="email" class="form-control" id="email" name="email">
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <label for="telefone" class="form-label">Telefone</label>
+            <input type="text" class="form-control" id="telefone" name="telefone">
+        </div>
+        <div class="col-md-6 mb-3">
+            <label for="email" class="form-label">Email</label>
+            <input type="email" class="form-control" id="email" name="email">
+        </div>
     </div>
     
     <a href="{{ url_for('listar_fornecedores') }}" class="btn btn-secondary">Cancelar</a>

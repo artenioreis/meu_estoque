@@ -142,19 +142,57 @@ def finalizar_venda():
 @app.route('/fornecedores')
 @login_required
 def listar_fornecedores():
-    fornecedores = Fornecedor.query.order_by(Fornecedor.nome.asc()).all()
-    return render_template('fornecedores.html', fornecedores=fornecedores)
+    search_term = request.args.get('q')
+    query = Fornecedor.query
+    if search_term:
+        query = query.filter(or_(Fornecedor.nome.ilike(f'%{search_term}%'), Fornecedor.cnpj.ilike(f'%{search_term}%')))
+    fornecedores = query.order_by(Fornecedor.nome.asc()).all()
+    return render_template('fornecedores.html', fornecedores=fornecedores, search_term=search_term)
 
 @app.route('/fornecedor/novo', methods=['GET', 'POST'])
 @login_required
 def adicionar_fornecedor():
     if request.method == 'POST':
-        novo_fornecedor = Fornecedor(nome=request.form['nome'], telefone=request.form.get('telefone'), email=request.form.get('email'))
+        cnpj = request.form.get('cnpj')
+        if cnpj and Fornecedor.query.filter_by(cnpj=cnpj).first():
+            flash('Já existe um fornecedor com este CNPJ.', 'danger')
+            return render_template('adicionar_fornecedor.html')
+        novo_fornecedor = Fornecedor(nome=request.form['nome'], telefone=request.form.get('telefone'), email=request.form.get('email'), cnpj=cnpj)
         db.session.add(novo_fornecedor)
         db.session.commit()
         flash('Fornecedor cadastrado com sucesso!', 'success')
         return redirect(url_for('listar_fornecedores'))
     return render_template('adicionar_fornecedor.html')
+
+@app.route('/fornecedor/editar/<int:id>', methods=['GET', 'POST'])
+@login_required
+def editar_fornecedor(id):
+    fornecedor = db.session.get(Fornecedor, id)
+    if request.method == 'POST':
+        cnpj = request.form.get('cnpj')
+        if cnpj and Fornecedor.query.filter(Fornecedor.cnpj == cnpj, Fornecedor.id != id).first():
+            flash('Já existe outro fornecedor com este CNPJ.', 'danger')
+            return render_template('editar_fornecedor.html', fornecedor=fornecedor)
+        fornecedor.nome = request.form['nome']
+        fornecedor.telefone = request.form.get('telefone')
+        fornecedor.email = request.form.get('email')
+        fornecedor.cnpj = cnpj
+        db.session.commit()
+        flash('Fornecedor atualizado com sucesso!', 'success')
+        return redirect(url_for('listar_fornecedores'))
+    return render_template('editar_fornecedor.html', fornecedor=fornecedor)
+
+@app.route('/fornecedor/excluir/<int:id>', methods=['POST'])
+@login_required
+def excluir_fornecedor(id):
+    fornecedor = db.session.get(Fornecedor, id)
+    if fornecedor.produtos or fornecedor.contas:
+        flash('Não é possível excluir este fornecedor pois ele possui produtos ou contas a pagar associados.', 'danger')
+        return redirect(url_for('listar_fornecedores'))
+    db.session.delete(fornecedor)
+    db.session.commit()
+    flash('Fornecedor excluído com sucesso!', 'danger')
+    return redirect(url_for('listar_fornecedores'))
 
 # --- ROTAS DE PRODUTOS ---
 @app.route('/produtos')
