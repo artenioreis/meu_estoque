@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+{% block title %}Editar Utilizador{% endblock %}
+{% block content %}
+<h1 class="mb-4">Editar Utilizador</h1>
+<form method="POST" action="{{ url_for('editar_utilizador', id=user.id) }}">
+    <div class="mb-3">
+        <label for="username" class="form-label">Nome de Utilizador</label>
+        <input type="text" class="form-control" id="username" name="username" value="{{ user.username }}" required>
+    </div>
+    <div class="mb-3">
+        <label for="email" class="form-label">E-mail</label>
+        <input type="email" class="form-control" id="email" name="email" value="{{ user.email }}" required>
+    </div>
+    <div class="alert alert-info">
+        A palavra-passe só pode ser alterada pelo próprio utilizador na página "Trocar Palavra-passe".
+    </div>
+    <a href="{{ url_for('listar_utilizadores') }}" class="btn btn-secondary">Cancelar</a>
+    <button type="submit" class="btn btn-primary">Salvar Alterações</button>
+</form>
+{% endblock %}

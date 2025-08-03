@@ -13,21 +13,19 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            
-            /* --- IMAGEM DE FUNDO ADICIONADA --- */
-            background-image: url('https://blog.bling.com.br/wp-content/uploads/2018/05/importancia-controle-estoque-empresa.png');
-            background-size: cover; /* Faz a imagem cobrir toda a tela */
-            background-position: center; /* Centraliza a imagem */
-            background-repeat: no-repeat; /* Evita que a imagem se repita */
+            background-image: url('https://images.unsplash.com/photo-1497215728101-856f4ea42174?q=80&w=2070&auto=format&fit=crop');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
         }
         .login-form {
             width: 100%;
             max-width: 400px;
-            padding: 2rem; /* Aumentei o padding para mais espaço */
+            padding: 2rem;
             border-radius: 0.5rem;
-            background-color: rgba(255, 255, 255, 0.95); /* Fundo branco levemente transparente */
-            box-shadow: 0 4px 15px rgba(31, 30, 30, 0.2); /* Sombra mais forte para destacar */
-            backdrop-filter: blur(4px); /* Efeito de desfoque no fundo do formulário */
+            background-color: rgba(255, 255, 255, 0.95);
+            box-shadow: 0 4px 15px rgba(0,0,0,.2);
+            backdrop-filter: blur(4px);
         }
     </style>
 </head>
@@ -36,7 +34,7 @@
         <form action="{{ url_for('login') }}" method="POST">
             <h1 class="h3 mb-3 fw-normal text-center">Acessar Sistema</h1>
 
-            <!-- Bloco para mensagens de erro -->
+            <!-- Bloco para mensagens de erro/sucesso -->
             {% with messages = get_flashed_messages(with_categories=true) %}
                 {% if messages %}
                     {% for category, message in messages %}
@@ -47,15 +45,20 @@
 
             <div class="form-floating mb-3">
                 <input type="text" class="form-control" id="username" name="username" placeholder="Usuário" required>
-                <label for="username">Usuário</label>
+                <label for="username">Utilizador</label>
             </div>
             <div class="form-floating mb-3">
                 <input type="password" class="form-control" id="password" name="password" placeholder="Senha" required>
-                <label for="password">Senha</label>
+                <label for="password">Palavra-passe</label>
             </div>
 
             <button class="w-100 btn btn-lg btn-primary" type="submit">Entrar</button>
-            <p class="mt-5 mb-3 text-muted text-center">&copy; 2025 Meu Estoque - Sistema Online de Gestão de Estoque</p>
+            
+            <div class="text-center mt-3">
+                <a href="{{ url_for('recuperar_senha') }}">Esqueceu a sua palavra-passe?</a>
+            </div>
+
+            <p class="mt-5 mb-3 text-muted text-center">&copy; 2024</p>
         </form>
     </main>
 </body>

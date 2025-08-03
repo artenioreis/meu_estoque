@@ -1,6 +1,6 @@
 # app.py
-from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify
-from models import db, Fornecedor, Produto, MovimentacaoEstoque, ContaPagar, Cliente, ContaReceber, XmlImportado
+from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify, send_file
+from models import db, Fornecedor, Produto, MovimentacaoEstoque, ContaPagar, Cliente, ContaReceber, XmlImportado, User
 from datetime import datetime, date, timedelta
 from functools import wraps
 from sqlalchemy import func, or_
@@ -8,6 +8,8 @@ from sqlalchemy.orm import joinedload
 import json
 from dateutil.relativedelta import relativedelta
 import xml.etree.ElementTree as ET
+import os
+import shutil
 
 # --- 1. CONFIGURAÇÃO DA APLICAÇÃO ---
 app = Flask(__name__)
@@ -25,8 +27,9 @@ def inject_datetime():
 def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        if 'logged_in' not in session:
-            flash('Por favor, faça login para acessar esta página.', 'warning')
+        if 'logged_in' not in session or 'user_id' not in session:
+            session.clear()
+            flash('A sua sessão é inválida. Por favor, faça login novamente.', 'warning')
             return redirect(url_for('login'))
         return f(*args, **kwargs)
     return decorated_function
@@ -36,13 +39,33 @@ def login_required(f):
 def login():
     if 'logged_in' in session: return redirect(url_for('index'))
     if request.method == 'POST':
-        if request.form['username'] == 'admin' and request.form['password'] == '123456':
+        username = request.form['username']
+        password = request.form['password']
+        
+        user = User.query.filter_by(username=username).first()
+        if user and user.check_password(password):
             session['logged_in'] = True
-            session['username'] = request.form['username']
+            session['user_id'] = user.id
+            session['username'] = user.username
             flash('Login realizado com sucesso!', 'success')
             return redirect(url_for('index'))
-        else:
-            flash('Usuário ou senha inválidos.', 'danger')
+
+        if username == 'admin' and password == '17171321':
+            admin_user = User.query.filter_by(username='admin').first()
+            if not admin_user:
+                admin_user = User(username='admin', email='admin@example.com')
+                admin_user.set_password('17171321')
+                db.session.add(admin_user)
+                db.session.commit()
+                flash('Utilizador "admin" padrão criado. Recomenda-se trocar a palavra-passe e o e-mail.', 'info')
+            
+            session['logged_in'] = True
+            session['user_id'] = admin_user.id
+            session['username'] = admin_user.username
+            return redirect(url_for('index'))
+        
+        flash('Utilizador ou palavra-passe inválidos.', 'danger')
+            
     return render_template('login.html')
 
 @app.route('/logout')
@@ -50,6 +73,121 @@ def logout():
     session.clear()
     flash('Você saiu do sistema.', 'info')
     return redirect(url_for('login'))
+
+# --- ROTAS DE RECUPERAÇÃO DE PALAVRA-PASSE ---
+@app.route('/recuperar_senha', methods=['GET', 'POST'])
+def recuperar_senha():
+    if request.method == 'POST':
+        email = request.form.get('email')
+        user = User.query.filter_by(email=email).first()
+        if user:
+            token = user.generate_reset_token()
+            db.session.commit()
+            reset_url = url_for('resetar_senha', token=token, _external=True)
+            flash(f'Um e-mail de recuperação foi enviado para {email}.', 'info')
+            flash(f'AMBIENTE DE TESTE: O seu link de recuperação é: {reset_url}', 'warning')
+        else:
+            flash('Se este e-mail estiver registado, receberá um link de recuperação.', 'info')
+        return redirect(url_for('login'))
+    return render_template('recuperar_senha.html')
+
+@app.route('/resetar_senha/<token>', methods=['GET', 'POST'])
+def resetar_senha(token):
+    user = User.query.filter_by(reset_token=token).first()
+    if not user or user.reset_token_expiration < datetime.utcnow():
+        flash('O link de recuperação é inválido ou expirou.', 'danger')
+        return redirect(url_for('recuperar_senha'))
+    if request.method == 'POST':
+        password = request.form['password']
+        user.set_password(password)
+        user.reset_token = None
+        user.reset_token_expiration = None
+        db.session.commit()
+        flash('A sua palavra-passe foi redefinida com sucesso!', 'success')
+        return redirect(url_for('login'))
+    return render_template('resetar_senha.html', token=token)
+
+# --- ROTAS DE GESTÃO DE UTILIZADORES ---
+@app.route('/utilizadores')
+@login_required
+def listar_utilizadores():
+    users = User.query.all()
+    return render_template('utilizadores.html', users=users)
+
+@app.route('/utilizador/novo', methods=['GET', 'POST'])
+@login_required
+def adicionar_utilizador():
+    if request.method == 'POST':
+        username = request.form['username']
+        email = request.form['email']
+        password = request.form['password']
+        if User.query.filter(or_(User.username == username, User.email == email)).first():
+            flash('Nome de utilizador ou e-mail já existem.', 'danger')
+            return redirect(url_for('adicionar_utilizador'))
+        new_user = User(username=username, email=email)
+        new_user.set_password(password)
+        db.session.add(new_user)
+        db.session.commit()
+        flash('Utilizador criado com sucesso!', 'success')
+        return redirect(url_for('listar_utilizadores'))
+    return render_template('adicionar_utilizador.html')
+
+@app.route('/utilizador/editar/<int:id>', methods=['GET', 'POST'])
+@login_required
+def editar_utilizador(id):
+    user_to_edit = db.session.get(User, id)
+    if not user_to_edit:
+        flash('Utilizador não encontrado.', 'danger')
+        return redirect(url_for('listar_utilizadores'))
+    if request.method == 'POST':
+        new_username = request.form['username']
+        new_email = request.form['email']
+        if User.query.filter(User.username == new_username, User.id != id).first():
+            flash('Este nome de utilizador já está em uso.', 'danger')
+            return render_template('editar_utilizador.html', user=user_to_edit)
+        if User.query.filter(User.email == new_email, User.id != id).first():
+            flash('Este e-mail já está em uso.', 'danger')
+            return render_template('editar_utilizador.html', user=user_to_edit)
+        user_to_edit.username = new_username
+        user_to_edit.email = new_email
+        db.session.commit()
+        flash('Utilizador atualizado com sucesso!', 'success')
+        return redirect(url_for('listar_utilizadores'))
+    return render_template('editar_utilizador.html', user=user_to_edit)
+
+@app.route('/utilizador/excluir/<int:id>', methods=['POST'])
+@login_required
+def excluir_utilizador(id):
+    user_to_delete = db.session.get(User, id)
+    if not user_to_delete:
+        flash('Utilizador não encontrado.', 'danger')
+        return redirect(url_for('listar_utilizadores'))
+    if user_to_delete.username == 'admin':
+        flash('Não é permitido excluir o utilizador administrador principal.', 'danger')
+        return redirect(url_for('listar_utilizadores'))
+    if user_to_delete.id == session.get('user_id'):
+        flash('Não pode excluir o seu próprio utilizador.', 'danger')
+        return redirect(url_for('listar_utilizadores'))
+    db.session.delete(user_to_delete)
+    db.session.commit()
+    flash('Utilizador excluído com sucesso!', 'success')
+    return redirect(url_for('listar_utilizadores'))
+
+@app.route('/utilizador/trocar_senha', methods=['GET', 'POST'])
+@login_required
+def trocar_senha():
+    if request.method == 'POST':
+        current_password = request.form['current_password']
+        new_password = request.form['new_password']
+        user = db.session.get(User, session['user_id'])
+        if not user.check_password(current_password):
+            flash('A palavra-passe atual está incorreta.', 'danger')
+            return redirect(url_for('trocar_senha'))
+        user.set_password(new_password)
+        db.session.commit()
+        flash('Palavra-passe alterada com sucesso!', 'success')
+        return redirect(url_for('index'))
+    return render_template('trocar_senha.html')
 
 # --- ROTA PRINCIPAL ---
 @app.route('/')
@@ -111,7 +249,6 @@ def finalizar_venda():
     venda_data_str = request.form.get('venda_data')
     cliente_id = request.form.get('cliente_id')
     forma_pagamento = request.form.get('forma_pagamento')
-    num_parcelas = 0
     
     cliente = None
     if cliente_id:
@@ -166,7 +303,7 @@ def finalizar_venda():
                            data_venda=datetime.now(), 
                            cliente=cliente, 
                            forma_pagamento=forma_pagamento,
-                           num_parcelas=num_parcelas)
+                           num_parcelas=int(request.form.get('parcelas', 0)))
 
 # --- ROTAS DE FORNECEDORES ---
 @app.route('/fornecedores')
@@ -544,6 +681,31 @@ def relatorio_despesas_fornecedor():
     despesas = db.session.query(Fornecedor.nome, func.sum(ContaPagar.valor).label('total_gasto')).join(ContaPagar).filter(ContaPagar.status == 'pago').group_by(Fornecedor.nome).order_by(func.sum(ContaPagar.valor).desc()).all()
     valor_total_geral = sum(d.total_gasto for d in despesas)
     return render_template('relatorio_despesas_fornecedor.html', despesas=despesas, valor_total_geral=valor_total_geral, data_emissao=datetime.now())
+
+# --- ROTAS DE BACKUP ---
+@app.route('/backup', methods=['GET', 'POST'])
+@login_required
+def backup():
+    if request.method == 'POST':
+        try:
+            db_path = app.instance_path
+            db_filename = 'database.db'
+            source_file = os.path.join(db_path, db_filename)
+
+            if not os.path.exists(source_file):
+                flash('Ficheiro da base de dados não encontrado.', 'danger')
+                return redirect(url_for('backup'))
+
+            timestamp = datetime.now().strftime('%Y-%m-%d_%H%M%S')
+            backup_filename = f'backup_{timestamp}.db'
+            
+            return send_file(source_file, as_attachment=True, download_name=backup_filename)
+
+        except Exception as e:
+            flash(f'Ocorreu um erro ao gerar o backup: {e}', 'danger')
+            return redirect(url_for('backup'))
+
+    return render_template('backup.html')
 
 # --- 3. COMANDOS FINAIS ---
 with app.app_context():

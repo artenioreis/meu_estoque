@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+
+{% block title %}Backup do Sistema{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">Backup e Restauração</h1>
+
+<div class="row">
+    <!-- Card de Backup Manual -->
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h3><i class="fas fa-download"></i> Backup Manual</h3>
+            </div>
+            <div class="card-body">
+                <p class="card-text">Clique no botão abaixo para descarregar uma cópia de segurança completa da sua base de dados. Guarde este ficheiro num local seguro.</p>
+                <form action="{{ url_for('backup') }}" method="POST">
+                    <button type="submit" class="btn btn-primary">Fazer Backup Agora</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Card de Backup Automático -->
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h3><i class="fas fa-history"></i> Backup Automático</h3>
+            </div>
+            <div class="card-body">
+                <p class="card-text">Configure backups automáticos para garantir a segurança dos seus dados sem intervenção manual.</p>
+                <div class="mb-3">
+                    <label for="frequency" class="form-label">Frequência</label>
+                    <select id="frequency" class="form-select" disabled>
+                        <option>Diariamente</option>
+                        <option>Semanalmente</option>
+                    </select>
+                </div>
+                <button class="btn btn-secondary" disabled>Agendar Backup</button>
+                <div class="form-text mt-2">
+                    <strong>Nota:</strong> O agendamento de backups automáticos requer uma configuração de servidor de produção e não está ativo neste ambiente de desenvolvimento.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
