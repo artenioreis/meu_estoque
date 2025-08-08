@@ -5,7 +5,7 @@
 {% block extra_styles %}
 <style>
     body {
-        background-image: url('https://blog.nakednuts.com.br/wp-content/uploads/2022/03/rotinas-setor-de-compras-como-criar.jpg');
+        background-image: url('https://8milimetros.com.br/wp-content/uploads/2018/10/dicas-para-reter-clientes.jpg');
         background-size: cover;
         background-attachment: fixed;
     }
@@ -57,20 +57,6 @@
                         <button type="button" class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#confirmDeleteModal-{{ fornecedor.id }}" title="Excluir"><i class="fas fa-trash-alt"></i></button>
                     </td>
                 </tr>
-                <div class="modal fade" id="confirmDeleteModal-{{ fornecedor.id }}" tabindex="-1">
-                    <div class="modal-dialog">
-                        <div class="modal-content">
-                            <div class="modal-header"><h5 class="modal-title">Confirmar Exclusão</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-                            <div class="modal-body">Tem certeza que deseja excluir o fornecedor <strong>{{ fornecedor.nome }}</strong>?</div>
-                            <div class="modal-footer">
-                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                                <form action="{{ url_for('excluir_fornecedor', id=fornecedor.id) }}" method="POST" class="d-inline">
-                                    <button type="submit" class="btn btn-danger">Excluir</button>
-                                </form>
-                            </div>
-                        </div>
-                    </div>
-                </div>
                 {% else %}
                 <tr><td colspan="5" class="text-center text-muted">Nenhum fornecedor encontrado.</td></tr>
                 {% endfor %}
@@ -78,4 +64,28 @@
         </table>
     </div>
 </div>
+
+<!-- CORREÇÃO: Modais movidos para fora da tabela -->
+{% for fornecedor in fornecedores %}
+<div class="modal fade" id="confirmDeleteModal-{{ fornecedor.id }}" tabindex="-1" aria-labelledby="modalLabel-{{ fornecedor.id }}" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered"> <!-- Janela centralizada -->
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalLabel-{{ fornecedor.id }}">Confirmar Exclusão</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                Tem certeza que deseja excluir o fornecedor <strong>{{ fornecedor.nome }}</strong>?
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <form action="{{ url_for('excluir_fornecedor', id=fornecedor.id) }}" method="POST" class="d-inline">
+                    <button type="submit" class="btn btn-danger">Excluir</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
 {% endblock %}

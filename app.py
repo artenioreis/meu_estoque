@@ -83,12 +83,11 @@ def recuperar_senha():
         if user:
             token = user.generate_reset_token()
             db.session.commit()
-            reset_url = url_for('resetar_senha', token=token, _external=True)
-            flash(f'Um e-mail de recuperação foi enviado para {email}.', 'info')
-            flash(f'AMBIENTE DE TESTE: O seu link de recuperação é: {reset_url}', 'warning')
+            flash('Utilizador encontrado. Por favor, defina a sua nova palavra-passe.', 'info')
+            return redirect(url_for('resetar_senha', token=token))
         else:
-            flash('Se este e-mail estiver registado, receberá um link de recuperação.', 'info')
-        return redirect(url_for('login'))
+            flash('O e-mail informado não foi encontrado no sistema.', 'danger')
+            return redirect(url_for('recuperar_senha'))
     return render_template('recuperar_senha.html')
 
 @app.route('/resetar_senha/<token>', methods=['GET', 'POST'])
@@ -304,6 +303,48 @@ def finalizar_venda():
                            cliente=cliente, 
                            forma_pagamento=forma_pagamento,
                            num_parcelas=int(request.form.get('parcelas', 0)))
+
+@app.route('/processar_devolucao', methods=['POST'])
+@login_required
+def processar_devolucao():
+    devolucao_data_str = request.form.get('venda_data')
+    cliente_id = request.form.get('cliente_id')
+    
+    cliente = None
+    if cliente_id:
+        cliente = db.session.get(Cliente, cliente_id)
+
+    if not devolucao_data_str:
+        flash('Nenhum item na devolução.', 'warning')
+        return redirect(url_for('pdv'))
+
+    itens_devolucao = json.loads(devolucao_data_str)
+    total_devolvido = 0
+
+    for item in itens_devolucao:
+        produto = db.session.get(Produto, item['id'])
+        if produto:
+            produto.quantidade_estoque += item['quantidade']
+            movimento = MovimentacaoEstoque(
+                produto_id=produto.id, 
+                tipo='entrada', 
+                quantidade=item['quantidade'], 
+                observacao='Devolução PDV',
+                cliente_id=cliente_id
+            )
+            db.session.add(movimento)
+            total_devolvido += item['quantidade'] * item['preco_venda']
+        else:
+            flash(f'Produto com ID {item["id"]} não encontrado.', 'danger')
+            return redirect(url_for('pdv'))
+            
+    db.session.commit()
+    
+    return render_template('cupom_devolucao.html', 
+                           itens_devolucao=itens_devolucao, 
+                           total_devolvido=total_devolvido, 
+                           data_devolucao=datetime.now(), 
+                           cliente=cliente)
 
 # --- ROTAS DE FORNECEDORES ---
 @app.route('/fornecedores')
@@ -711,9 +752,5 @@ def backup():
 with app.app_context():
     db.create_all()
 
-#if __name__ == '__main__':
-    #app.run(debug=True)
-
 if __name__ == '__main__':
-    from waitress import serve
-    serve(app, host="0.0.0.0", port=5000)
+    app.run(debug=True)

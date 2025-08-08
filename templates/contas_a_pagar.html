@@ -96,27 +96,6 @@
                         </button>
                     </td>
                 </tr>
-
-                <!-- Modal de Confirmação de Exclusão -->
-                <div class="modal fade" id="confirmDeleteModal-{{ conta.id }}" tabindex="-1" aria-labelledby="modalLabel-{{ conta.id }}" aria-hidden="true">
-                    <div class="modal-dialog">
-                        <div class="modal-content">
-                            <div class="modal-header">
-                                <h5 class="modal-title" id="modalLabel-{{ conta.id }}">Confirmar Exclusão</h5>
-                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                            </div>
-                            <div class="modal-body">
-                                Tem certeza que deseja excluir a conta <strong>{{ conta.descricao }}</strong>?
-                            </div>
-                            <div class="modal-footer">
-                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                                <form action="{{ url_for('excluir_conta', id=conta.id) }}" method="POST" class="d-inline">
-                                    <button type="submit" class="btn btn-danger">Excluir</button>
-                                </form>
-                            </div>
-                        </div>
-                    </div>
-                </div>
                 {% else %}
                 <tr>
                     <td colspan="6" class="text-center text-muted">Nenhuma conta encontrada.</td>
@@ -126,4 +105,28 @@
         </table>
     </div>
 </div>
+
+<!-- CORREÇÃO: Modais movidos para fora da tabela -->
+{% for conta in contas %}
+<div class="modal fade" id="confirmDeleteModal-{{ conta.id }}" tabindex="-1" aria-labelledby="modalLabel-{{ conta.id }}" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered"> <!-- Janela centralizada -->
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalLabel-{{ conta.id }}">Confirmar Exclusão</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                Tem certeza que deseja excluir a conta <strong>{{ conta.descricao }}</strong>?
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <form action="{{ url_for('excluir_conta', id=conta.id) }}" method="POST" class="d-inline">
+                    <button type="submit" class="btn btn-danger">Excluir</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
 {% endblock %}

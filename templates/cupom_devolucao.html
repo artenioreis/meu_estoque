@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+    <meta charset="utf-8">
+    <title>Comprovante de Devolução</title>
+    <style>
+        /* ... (mesmos estilos do cupom.html) ... */
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h2>Minha Empresa</h2>
+        <p>Rua Exemplo, 123 - Centro</p>
+        <p>CNPJ: 00.000.000/0001-00</p>
+        <hr>
+        <p><strong>COMPROVANTE DE DEVOLUÇÃO</strong></p>
+        <p>{{ data_devolucao.strftime('%d/%m/%Y %H:%M:%S') }}</p>
+        <hr>
+    </div>
+
+    {% if cliente %}
+    <div class="cliente-info">
+        <p><strong>CLIENTE:</strong> {{ cliente.nome }}</p>
+        <hr>
+    </div>
+    {% endif %}
+
+    <table>
+        <thead>
+            <tr>
+                <th>Item Devolvido</th>
+                <th>Qtd</th>
+                <th>Vl. Unit.</th>
+                <th class="align-right">Subtotal</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in itens_devolucao %}
+            <tr class="item-row">
+                <td>{{ item.nome }}</td>
+                <td>{{ item.quantidade }}</td>
+                <td>{{ "%.2f"|format(item.preco_venda) }}</td>
+                <td class="align-right">{{ "%.2f"|format(item.quantidade * item.preco_venda) }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <hr>
+
+    <table>
+        <tr class="total-row">
+            <td colspan="3">TOTAL DEVOLVIDO</td>
+            <td class="align-right">R$ {{ "%.2f"|format(total_devolvido) }}</td>
+        </tr>
+    </table>
+    
+    <hr>
+
+    <button onclick="window.print()">Imprimir Comprovante</button>
+</body>
+</html>
