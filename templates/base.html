@@ -31,7 +31,6 @@
                 </ul>
                 <ul class="navbar-nav">
                     {% if session['logged_in'] %}
-                    <!-- NOVO MENU DE SISTEMA -->
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" id="navbarSystem" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                             <i class="fas fa-cog"></i> Sistema
@@ -45,7 +44,7 @@
                             Olá, {{ session['username'] }}
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarUser">
-                            <li><a class="dropdown-item" href="{{ url_for('listar_utilizadores') }}">Gerir Utilizadores</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('listar_utilizadores') }}">Gerir Usuarios</a></li>
                             <li><a class="dropdown-item" href="{{ url_for('trocar_senha') }}">Trocar Palavra-passe</a></li>
                             <li><hr class="dropdown-divider"></li>
                             <li><a class="dropdown-item" href="{{ url_for('logout') }}">Sair</a></li>

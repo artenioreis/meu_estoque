@@ -1,5 +1,4 @@
 {% extends 'base.html' %}
-
 {% block title %}Contas a Receber{% endblock %}
 
 {% block extra_styles %}
@@ -32,7 +31,7 @@
                     <th>Valor</th>
                     <th>Forma de Pagamento</th>
                     <th class="text-center">Status</th>
-                    <th class="text-center">Ações</th>
+                    <th class="text-center">Ações / Data de Pagamento</th>
                 </tr>
             </thead>
             <tbody>
@@ -52,12 +51,13 @@
                     <td class="text-center">
                         {% if conta.status == 'Em Aberto' %}
                         <form action="{{ url_for('baixar_conta_receber', id=conta.id) }}" method="POST" class="d-inline">
-                            <button type="submit" class="btn btn-success btn-sm" title="Dar Baixa (Receber)">
-                                <i class="fas fa-hand-holding-usd"></i>
+                            <button type="submit" class="btn btn-success btn-sm" title="Dar Baixa">
+                                <i class="fas fa-hand-holding-usd"></i> Receber
                             </button>
                         </form>
                         {% else %}
-                            Recebido em {{ conta.data_recebimento.strftime('%d/%m/%Y') }}
+                            <!-- CORREÇÃO: Usa 'data_vencimento' para exibir a data do pagamento -->
+                            Recebido em {{ conta.data_vencimento.strftime('%d/%m/%Y') }}
                         {% endif %}
                     </td>
                 </tr>

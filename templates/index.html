@@ -5,16 +5,10 @@
 {% block extra_styles %}
 <style>
     body {
-        background-image: url('https://images.unsplash.com/photo-1618005198919-d3d4b5a92ead?q=80&w=1974&auto=format&fit=crop');
-        background-size: cover;
-        background-attachment: fixed;
-    }
-    .card {
-        background-color: rgba(255, 255, 255, 0.95);
-        backdrop-filter: blur(5px);
+        background-color: #f4f7f6; /* Cor de fundo discreta */
     }
     .card-chart {
-        height: 350px;
+        height: 370px; /* Altura fixa para os cards dos gráficos */
     }
     .chart-container {
         position: relative;
@@ -129,21 +123,18 @@
         {% endif %}
     </div>
     <div class="col-lg-4 mb-4">
-        <h4><i class="fas fa-user-clock"></i> Contas a Receber (A Prazo)</h4>
-        {% if contas_a_prazo_alertas %}
+        <h4><i class="fas fa-user-clock"></i> Clientes com Saldo Devedor</h4>
+        {% if saldos_devedores %}
             <ul class="list-group">
-                {% for conta in contas_a_prazo_alertas %}
+                {% for cliente, saldo in saldos_devedores %}
                 <li class="list-group-item list-group-item-info d-flex justify-content-between align-items-center">
-                    <div>
-                        <strong>{{ conta.cliente.nome }}</strong><br>
-                        <small>R$ {{ "%.2f"|format(conta.valor) }}</small>
-                    </div>
-                    <span class="badge bg-info text-dark">Venda de {{ conta.data_venda.strftime('%d/%m/%Y') }}</span>
+                    <strong>{{ cliente.nome }}</strong>
+                    <span class="badge bg-danger">R$ {{ "%.2f"|format(saldo) }}</span>
                 </li>
                 {% endfor %}
             </ul>
         {% else %}
-            <p class="text-muted">Nenhuma conta a receber em aberto.</p>
+            <p class="text-muted">Nenhum cliente com saldo devedor.</p>
         {% endif %}
     </div>
 </div>

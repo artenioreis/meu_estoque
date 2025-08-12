@@ -198,11 +198,10 @@ def index():
     contas_vencidas = ContaPagar.query.filter(ContaPagar.status == 'pendente', ContaPagar.data_vencimento < hoje).all()
     contas_vencendo_hoje = ContaPagar.query.filter(ContaPagar.status == 'pendente', ContaPagar.data_vencimento == hoje).all()
     contas_vencendo_amanha = ContaPagar.query.filter(ContaPagar.status == 'pendente', ContaPagar.data_vencimento == amanha).all()
-    outras_contas_pendentes = ContaPagar.query.filter(ContaPagar.status == 'pendente', ContaPagar.data_vencimento > amanha).order_by(ContaPagar.data_vencimento.asc()).all()
     produtos_estoque_baixo = Produto.query.filter(Produto.quantidade_estoque <= Produto.estoque_minimo).all()
     produtos_perto_vencer = Produto.query.filter(Produto.data_vencimento != None, Produto.data_vencimento >= hoje, Produto.data_vencimento <= limite_vencimento).order_by(Produto.data_vencimento.asc()).all()
-    contas_a_prazo_alertas = ContaReceber.query.filter(ContaReceber.status == 'Em Aberto').order_by(ContaReceber.data_venda.asc()).all()
-    return render_template('index.html', produtos_alertas=produtos_estoque_baixo, produtos_perto_vencer=produtos_perto_vencer, contas_vencidas=contas_vencidas, contas_vencendo_hoje=contas_vencendo_hoje, contas_vencendo_amanha=contas_vencendo_amanha, outras_contas_pendentes=outras_contas_pendentes, contas_a_prazo_alertas=contas_a_prazo_alertas)
+    saldos_devedores = db.session.query(Cliente, func.sum(ContaReceber.valor).label('saldo')).join(ContaReceber).filter(ContaReceber.status == 'Em Aberto').group_by(Cliente.id).having(func.sum(ContaReceber.valor) > 0.01).all()
+    return render_template('index.html', produtos_alertas=produtos_estoque_baixo, produtos_perto_vencer=produtos_perto_vencer, contas_vencidas=contas_vencidas, contas_vencendo_hoje=contas_vencendo_hoje, contas_vencendo_amanha=contas_vencendo_amanha, saldos_devedores=saldos_devedores)
 
 # --- ROTAS DA API ---
 @app.route('/api/dados_graficos')
@@ -280,7 +279,7 @@ def finalizar_venda():
                     cliente_id=cliente_id,
                     valor=valor_parcela,
                     data_venda=date.today(),
-                    data_recebimento=data_vencimento,
+                    data_vencimento=data_vencimento,
                     status='Em Aberto',
                     forma_pagamento=f'A Prazo ({i}/{num_parcelas})'
                 )
@@ -291,7 +290,7 @@ def finalizar_venda():
                 valor=total_venda,
                 forma_pagamento=forma_pagamento,
                 status='Recebido',
-                data_recebimento=date.today()
+                data_vencimento=date.today()
             )
             db.session.add(nova_conta)
 
@@ -319,7 +318,7 @@ def processar_devolucao():
         return redirect(url_for('pdv'))
 
     itens_devolucao = json.loads(devolucao_data_str)
-    total_devolvido = 0
+    total_devolvido = sum(item['quantidade'] * item['preco_venda'] for item in itens_devolucao)
 
     for item in itens_devolucao:
         produto = db.session.get(Produto, item['id'])
@@ -333,11 +332,23 @@ def processar_devolucao():
                 cliente_id=cliente_id
             )
             db.session.add(movimento)
-            total_devolvido += item['quantidade'] * item['preco_venda']
         else:
             flash(f'Produto com ID {item["id"]} não encontrado.', 'danger')
+            db.session.rollback()
             return redirect(url_for('pdv'))
             
+    if cliente_id:
+        nota_de_credito = ContaReceber(
+            cliente_id=cliente_id,
+            valor=-total_devolvido,
+            data_venda=date.today(),
+            data_vencimento=date.today(),
+            status='Recebido',
+            forma_pagamento='Devolução'
+        )
+        db.session.add(nota_de_credito)
+        flash(f'Crédito de R$ {total_devolvido:.2f} gerado para o cliente {cliente.nome}.', 'info')
+
     db.session.commit()
     
     return render_template('cupom_devolucao.html', 
@@ -653,7 +664,7 @@ def listar_contas_receber():
 def baixar_conta_receber(id):
     conta = db.session.get(ContaReceber, id)
     conta.status = 'Recebido'
-    conta.data_recebimento = date.today()
+    conta.data_vencimento = date.today()
     db.session.commit()
     flash('Conta recebida com sucesso!', 'success')
     return redirect(url_for('listar_contas_receber'))
@@ -753,4 +764,5 @@ with app.app_context():
     db.create_all()
 
 if __name__ == '__main__':
+    init_db()
     app.run(debug=True)
