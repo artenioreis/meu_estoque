@@ -1,78 +1,112 @@
 <!doctype html>
 <html lang="pt-br">
+
 <head>
     <meta charset="utf-8">
     <title>Cupom de Venda</title>
     <style>
+        /* Ajuste para compatibilidade com bobinas de 58mm e 80mm */
         body {
             font-family: 'Courier New', Courier, monospace;
-            width: 300px;
+            width: 95%;
+            /* Largura relativa para se ajustar à bobina da impressora */
+            max-width: 300px;
+            /* Limite para não esticar em telas grandes */
             margin: 0 auto;
-            padding: 10px;
+            padding: 5px;
+            color: #000;
         }
-        .header, .footer {
+
+        .header,
+        .footer {
             text-align: center;
         }
+
         h2 {
             margin: 0;
-            font-size: 1.2em;
+            font-size: 1.1em;
+            text-transform: uppercase;
         }
+
         p {
-            margin: 5px 0;
+            margin: 3px 0;
+            font-size: 0.85em;
         }
+
         hr {
             border: none;
             border-top: 1px dashed #000;
+            margin: 5px 0;
         }
+
         table {
             width: 100%;
             border-collapse: collapse;
         }
-        th, td {
+
+        th,
+        td {
             padding: 2px 0;
+            font-size: 0.85em;
+            text-align: left;
         }
+
         .item-row td {
-            font-size: 0.9em;
+            font-size: 0.8em;
+            vertical-align: top;
         }
+
         .total-row td {
             font-weight: bold;
-            font-size: 1.1em;
+            font-size: 1em;
             padding-top: 5px;
         }
+
         .align-right {
             text-align: right;
         }
+
+        /* Configurações específicas para a impressão */
         @media print {
+            @page {
+                margin: 0;
+                /* Remove margens do navegador (data, título, etc) */
+            }
+
             body {
                 width: 100%;
                 margin: 0;
-                padding: 0;
+                padding: 2mm;
+                /* Pequeno respiro para não colar na serrilha */
             }
+
             button {
                 display: none;
             }
         }
+
         button {
             width: 100%;
             padding: 10px;
             margin-top: 20px;
             cursor: pointer;
             font-size: 1em;
+            background-color: #f0f0f0;
+            border: 1px solid #ccc;
         }
     </style>
 </head>
+
 <body>
     <div class="header">
-        <h2>Cheirinhos da Auri</h2>
-        <p>Rua Juvêncio Barroso, 586 - Carlito Pamplona Fortaleza - CE.</p>
-        <p>CNPJ: 17.1706.172/2151-00</p>
-        <hr>
+        <h2>HOUSEHOT SWING CLUB</h2>
+        <p>R. Carlos Vasconcelos, 2206 - Aldeota, Fortaleza - CE.</p>
+        <p>Copyright By Cachorrão.</p>
         <p><strong>CUPOM NÃO FISCAL</strong></p>
         <p>{{ data_venda.strftime('%d/%m/%Y %H:%M:%S') }}</p>
         <hr>
     </div>
 
-    <!-- Seção do Cliente (só aparece se um cliente for selecionado) -->
     {% if cliente %}
     <div class="cliente-info">
         <p><strong>CLIENTE:</strong> {{ cliente.nome }}</p>
@@ -83,10 +117,10 @@
     <table>
         <thead>
             <tr>
-                <th>Item</th>
-                <th>Qtd</th>
-                <th>Vl. Unit.</th>
-                <th class="align-right">Subtotal</th>
+                <th style="width: 45%;">Item</th>
+                <th style="width: 15%;">Qtd</th>
+                <th style="width: 20%;">Unit.</th>
+                <th class="align-right" style="width: 20%;">Sub</th>
             </tr>
         </thead>
         <tbody>
@@ -108,14 +142,15 @@
             <td colspan="3">TOTAL</td>
             <td class="align-right">R$ {{ "%.2f"|format(total_venda) }}</td>
         </tr>
-        <!-- Informação da Forma de Pagamento -->
         {% if forma_pagamento %}
         <tr>
-            <td colspan="4">Pagamento: {{ forma_pagamento }}</td>
+            <td colspan="4" style="font-size: 0.85em; padding-top: 3px;">
+                Pagamento: {{ forma_pagamento }}
+            </td>
         </tr>
         {% endif %}
     </table>
-    
+
     <hr>
 
     <div class="footer">
@@ -124,4 +159,5 @@
 
     <button onclick="window.print()">Imprimir Cupom</button>
 </body>
+
 </html>

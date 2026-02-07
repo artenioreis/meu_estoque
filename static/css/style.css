@@ -1,55 +1,125 @@
 /* static/css/style.css */
 
-/* Estilos gerais para o corpo da página */
+/* --- 1. CONFIGURAÇÕES GERAIS E BACKGROUND GLOBAL --- */
 body {
-    background-color: #f8f9fa; /* Um cinza muito claro para o fundo */
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%) !important;
+    background-attachment: fixed;
+    margin: 0;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
 }
 
-/* Estilizando a barra de navegação principal */
-.navbar {
-    box-shadow: 0 2px 4px rgba(0,0,0,.1);
+/* --- 2. PÁGINA DE LOGIN --- */
+.login-page {
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
-/* Estilos para os cartões (cards) usados em toda a aplicação */
+.login-logo {
+    max-width: 250px;
+    height: auto;
+    filter: drop-shadow(0px 4px 8px rgba(0, 0, 0, 0.2));
+    display: block;
+    margin: 0 auto;
+}
+
+/* --- 3. ESTRUTURA SIDEBAR (EXPANDIR/RETRAIR) --- */
+#wrapper {
+    display: flex;
+    width: 100%;
+    align-items: stretch;
+}
+
+#sidebar {
+    min-width: 250px;
+    max-width: 250px;
+    background: #212529;
+    color: #fff;
+    transition: all 0.3s ease;
+    min-height: 100vh;
+    z-index: 1000;
+    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.3);
+}
+
+#sidebar.active {
+    min-width: 80px;
+    max-width: 80px;
+}
+
+#sidebar.active .sidebar-title,
+#sidebar.active .nav-link span {
+    display: none;
+}
+
+#sidebar .sidebar-header {
+    padding: 20px;
+    background: #1a1d20;
+    border-bottom: 1px solid #343a40;
+}
+
+#sidebar .nav-link {
+    padding: 15px 20px;
+    color: rgba(255, 255, 255, 0.7);
+    display: flex;
+    align-items: center;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: 0.2s;
+}
+
+#sidebar .nav-link:hover {
+    background: #343a40;
+    color: #fff;
+}
+
+#sidebar .nav-link i {
+    font-size: 1.1rem;
+    width: 25px;
+    text-align: center;
+    margin-right: 15px;
+}
+
+#sidebar.active .nav-link i {
+    margin-right: 0;
+    width: 100%;
+}
+
+/* --- 4. ÁREA DE CONTEÚDO --- */
+#content {
+    width: 100%;
+    padding: 25px;
+    transition: all 0.3s;
+}
+
 .card {
     border: none;
-    border-radius: 0.5rem;
-    box-shadow: 0 4px 6px rgba(0,0,0,.05);
-    margin-bottom: 1.5rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    background-color: rgba(255, 255, 255, 0.92) !important;
+    backdrop-filter: blur(10px);
 }
 
 .card-header {
+    background-color: rgba(0, 0, 0, 0.02);
     font-weight: 600;
-    background-color: #e9ecef;
-    border-bottom: 1px solid #dee2e6;
 }
 
-/* Melhorando a aparência dos botões */
-.btn-primary {
-    background-color: #0d6efd;
-    border-color: #0d6efd;
-    transition: background-color 0.2s ease-in-out;
-}
+/* --- 5. RESPONSIVIDADE --- */
+@media (max-width: 768px) {
+    #sidebar {
+        margin-left: -250px;
+    }
 
-.btn-primary:hover {
-    background-color: #0b5ed7;
-    border-color: #0a58ca;
-}
+    #sidebar.active {
+        margin-left: 0;
+        min-width: 250px;
+        max-width: 250px;
+    }
 
-/* Estilos para as tabelas */
-.table-hover tbody tr:hover {
-    background-color: #f1f1f1;
-    cursor: pointer;
-}
-
-/* Alertas de estoque baixo na tabela de produtos */
-.table-danger, .table-danger > th, .table-danger > td {
-    background-color: #f8d7da !important;
-    color: #721c24;
-}
-
-/* Estilo para as mensagens flash */
-.alert {
-    border-radius: 0.5rem;
+    #sidebar.active .sidebar-title,
+    #sidebar.active .nav-link span {
+        display: inline;
+    }
 }

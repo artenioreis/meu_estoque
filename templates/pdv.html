@@ -8,17 +8,24 @@
         background-size: cover;
         background-attachment: fixed;
     }
+
     .card {
         background-color: rgba(255, 255, 255, 0.9);
         backdrop-filter: blur(5px);
     }
-    #resultadoBusca, #resultadoBuscaCliente {
+
+    #resultadoBusca,
+    #resultadoBuscaCliente {
         position: absolute;
-        z-index: 1050; /* Z-index alto para ficar sobre outros elementos */
+        z-index: 1050;
+        /* Z-index alto para ficar sobre outros elementos */
         width: 95%;
     }
-    .modo-devolucao .card-header, .modo-devolucao #btnFinalizar {
-        background-color: #ffc107 !important; /* Amarelo para devolução */
+
+    .modo-devolucao .card-header,
+    .modo-devolucao #btnFinalizar {
+        background-color: #ffc107 !important;
+        /* Amarelo para devolução */
         color: #000 !important;
         border-color: #ffc107 !important;
     }
@@ -36,7 +43,7 @@
                 <i class="fas fa-undo"></i> Modo Devolução
             </button>
         </div>
-        
+
         <!-- Busca de Cliente -->
         <div class="input-group mb-3">
             <span class="input-group-text"><i class="fas fa-user"></i></span>
@@ -47,10 +54,11 @@
         <!-- Busca de Produto -->
         <div class="input-group mb-3">
             <span class="input-group-text"><i class="fas fa-search"></i></span>
-            <input type="text" id="buscaProduto" class="form-control" placeholder="Digite o código ou nome do produto...">
+            <input type="text" id="buscaProduto" class="form-control"
+                placeholder="Digite o código ou nome do produto...">
         </div>
         <div id="resultadoBusca" class="list-group"></div>
-        
+
         <hr class="mt-5">
 
         <!-- Itens da Venda -->
@@ -106,7 +114,7 @@
                             <label for="parcelas" class="form-label">Número de Parcelas</label>
                             <select name="parcelas" id="parcelas" class="form-select">
                                 {% for i in range(1, 11) %}
-                                    <option value="{{ i }}">{{ i }}x</option>
+                                <option value="{{ i }}">{{ i }}x</option>
                                 {% endfor %}
                             </select>
                         </div>
@@ -124,189 +132,189 @@
 
 {% block scripts %}
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Elementos do DOM
-    const buscaProdutoInput = document.getElementById('buscaProduto');
-    const resultadoBusca = document.getElementById('resultadoBusca');
-    const buscaClienteInput = document.getElementById('buscaCliente');
-    const resultadoBuscaCliente = document.getElementById('resultadoBuscaCliente');
-    const itensVendaBody = document.getElementById('itensVenda');
-    const valorTotalEl = document.getElementById('valorTotal');
-    const formVenda = document.getElementById('formVenda');
-    const vendaDataInput = document.getElementById('vendaDataInput');
-    const clienteIdInput = document.getElementById('clienteIdInput');
-    const clienteSelecionadoDiv = document.getElementById('clienteSelecionado');
-    const nomeClienteSpan = document.getElementById('nomeCliente');
-    const removerClienteBtn = document.getElementById('removerCliente');
-    const formaPagamentoSelect = document.getElementById('formaPagamento');
-    const campoParcelasDiv = document.getElementById('campoParcelas');
-    const modoDevolucaoBtn = document.getElementById('modoDevolucaoBtn');
-    const pdvTitle = document.getElementById('pdvTitle');
-    const cardTotal = document.getElementById('cardTotal');
-    const totalHeader = document.getElementById('totalHeader');
-    const btnFinalizar = document.getElementById('btnFinalizar');
-    const opcoesPagamento = document.getElementById('opcoesPagamento');
-    
-    // URLs das APIs
-    const produtoApiUrl = "{{ url_for('buscar_produto') }}";
-    const clienteApiUrl = "{{ url_for('buscar_cliente') }}";
+    document.addEventListener('DOMContentLoaded', function () {
+        // Elementos do DOM
+        const buscaProdutoInput = document.getElementById('buscaProduto');
+        const resultadoBusca = document.getElementById('resultadoBusca');
+        const buscaClienteInput = document.getElementById('buscaCliente');
+        const resultadoBuscaCliente = document.getElementById('resultadoBuscaCliente');
+        const itensVendaBody = document.getElementById('itensVenda');
+        const valorTotalEl = document.getElementById('valorTotal');
+        const formVenda = document.getElementById('formVenda');
+        const vendaDataInput = document.getElementById('vendaDataInput');
+        const clienteIdInput = document.getElementById('clienteIdInput');
+        const clienteSelecionadoDiv = document.getElementById('clienteSelecionado');
+        const nomeClienteSpan = document.getElementById('nomeCliente');
+        const removerClienteBtn = document.getElementById('removerCliente');
+        const formaPagamentoSelect = document.getElementById('formaPagamento');
+        const campoParcelasDiv = document.getElementById('campoParcelas');
+        const modoDevolucaoBtn = document.getElementById('modoDevolucaoBtn');
+        const pdvTitle = document.getElementById('pdvTitle');
+        const cardTotal = document.getElementById('cardTotal');
+        const totalHeader = document.getElementById('totalHeader');
+        const btnFinalizar = document.getElementById('btnFinalizar');
+        const opcoesPagamento = document.getElementById('opcoesPagamento');
 
-    let vendaItens = [];
-    let isReturnMode = false;
+        // URLs das APIs
+        const produtoApiUrl = "{{ url_for('buscar_produto') }}";
+        const clienteApiUrl = "{{ url_for('buscar_cliente') }}";
 
-    // Função genérica para busca
-    function setupBusca(inputElement, resultElement, apiUrl, onSelect) {
-        inputElement.addEventListener('keyup', function() {
-            const query = inputElement.value;
-            if (query.length < 2) {
-                resultElement.innerHTML = '';
-                return;
-            }
-            fetch(`${apiUrl}?q=${query}`)
-                .then(response => response.json())
-                .then(data => {
+        let vendaItens = [];
+        let isReturnMode = false;
+
+        // Função genérica para busca
+        function setupBusca(inputElement, resultElement, apiUrl, onSelect) {
+            inputElement.addEventListener('keyup', function () {
+                const query = inputElement.value;
+                if (query.length < 2) {
                     resultElement.innerHTML = '';
-                    data.forEach(item => {
-                        const link = document.createElement('a');
-                        link.href = '#';
-                        link.className = 'list-group-item list-group-item-action';
-                        link.textContent = item.nome + (item.telefone ? ` (${item.telefone})` : ` (R$ ${item.preco_venda.toFixed(2)})`);
-                        link.onclick = (e) => {
-                            e.preventDefault();
-                            onSelect(item);
-                            inputElement.value = '';
-                            resultElement.innerHTML = '';
-                            inputElement.focus();
-                        };
-                        resultElement.appendChild(link);
-                    });
-                })
-                .catch(error => console.error('Erro na busca:', error));
-        });
-    }
-
-    // Configura a busca de produtos e clientes
-    setupBusca(buscaProdutoInput, resultadoBusca, produtoApiUrl, adicionarItemVenda);
-    setupBusca(buscaClienteInput, resultadoBuscaCliente, clienteApiUrl, selecionarCliente);
-
-    function adicionarItemVenda(produto) {
-        const itemExistente = vendaItens.find(item => item.id === produto.id);
-        if (itemExistente) {
-            itemExistente.quantidade++;
-        } else {
-            vendaItens.push({ ...produto, quantidade: 1 });
+                    return;
+                }
+                fetch(`${apiUrl}?q=${query}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        resultElement.innerHTML = '';
+                        data.forEach(item => {
+                            const link = document.createElement('a');
+                            link.href = '#';
+                            link.className = 'list-group-item list-group-item-action';
+                            link.textContent = item.nome + (item.telefone ? ` (${item.telefone})` : ` (R$ ${item.preco_venda.toFixed(2)})`);
+                            link.onclick = (e) => {
+                                e.preventDefault();
+                                onSelect(item);
+                                inputElement.value = '';
+                                resultElement.innerHTML = '';
+                                inputElement.focus();
+                            };
+                            resultElement.appendChild(link);
+                        });
+                    })
+                    .catch(error => console.error('Erro na busca:', error));
+            });
         }
-        atualizarTabelaVenda();
-    }
 
-    function selecionarCliente(cliente) {
-        clienteIdInput.value = cliente.id;
-        nomeClienteSpan.textContent = cliente.nome;
-        clienteSelecionadoDiv.style.display = 'block';
-        buscaClienteInput.style.display = 'none';
-    }
+        // Configura a busca de produtos e clientes
+        setupBusca(buscaProdutoInput, resultadoBusca, produtoApiUrl, adicionarItemVenda);
+        setupBusca(buscaClienteInput, resultadoBuscaCliente, clienteApiUrl, selecionarCliente);
 
-    removerClienteBtn.addEventListener('click', function() {
-        clienteIdInput.value = '';
-        clienteSelecionadoDiv.style.display = 'none';
-        buscaClienteInput.style.display = 'block';
-        buscaClienteInput.value = '';
-        buscaClienteInput.focus();
-    });
+        function adicionarItemVenda(produto) {
+            const itemExistente = vendaItens.find(item => item.id === produto.id);
+            if (itemExistente) {
+                itemExistente.quantidade++;
+            } else {
+                vendaItens.push({ ...produto, quantidade: 1 });
+            }
+            atualizarTabelaVenda();
+        }
 
-    function atualizarTabelaVenda() {
-        itensVendaBody.innerHTML = '';
-        let total = 0;
-        vendaItens.forEach((item, index) => {
-            const subtotal = item.quantidade * item.preco_venda;
-            total += subtotal;
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
+        function selecionarCliente(cliente) {
+            clienteIdInput.value = cliente.id;
+            nomeClienteSpan.textContent = cliente.nome;
+            clienteSelecionadoDiv.style.display = 'block';
+            buscaClienteInput.style.display = 'none';
+        }
+
+        removerClienteBtn.addEventListener('click', function () {
+            clienteIdInput.value = '';
+            clienteSelecionadoDiv.style.display = 'none';
+            buscaClienteInput.style.display = 'block';
+            buscaClienteInput.value = '';
+            buscaClienteInput.focus();
+        });
+
+        function atualizarTabelaVenda() {
+            itensVendaBody.innerHTML = '';
+            let total = 0;
+            vendaItens.forEach((item, index) => {
+                const subtotal = item.quantidade * item.preco_venda;
+                total += subtotal;
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
                 <td>${item.nome}</td>
                 <td><input type="number" class="form-control form-control-sm" value="${item.quantidade}" min="1" data-index="${index}"></td>
                 <td>R$ ${item.preco_venda.toFixed(2)}</td>
                 <td>R$ ${subtotal.toFixed(2)}</td>
                 <td><button class="btn btn-danger btn-sm" data-index="${index}">&times;</button></td>
             `;
-            itensVendaBody.appendChild(tr);
-        });
-        valorTotalEl.textContent = `R$ ${total.toFixed(2)}`;
-        vendaDataInput.value = JSON.stringify(vendaItens);
-    }
+                itensVendaBody.appendChild(tr);
+            });
+            valorTotalEl.textContent = `R$ ${total.toFixed(2)}`;
+            vendaDataInput.value = JSON.stringify(vendaItens);
+        }
 
-    itensVendaBody.addEventListener('change', function(e) {
-        if (e.target.tagName === 'INPUT') {
-            const index = e.target.dataset.index;
-            const novaQtd = parseInt(e.target.value);
-            if (novaQtd > 0) {
-                vendaItens[index].quantidade = novaQtd;
+        itensVendaBody.addEventListener('change', function (e) {
+            if (e.target.tagName === 'INPUT') {
+                const index = e.target.dataset.index;
+                const novaQtd = parseInt(e.target.value);
+                if (novaQtd > 0) {
+                    vendaItens[index].quantidade = novaQtd;
+                }
+                atualizarTabelaVenda();
             }
-            atualizarTabelaVenda();
-        }
-    });
+        });
 
-    itensVendaBody.addEventListener('click', function(e) {
-        if (e.target.tagName === 'BUTTON') {
-            const index = e.target.dataset.index;
-            vendaItens.splice(index, 1);
-            atualizarTabelaVenda();
-        }
-    });
-    
-    formaPagamentoSelect.addEventListener('change', function() {
-        if (this.value === 'A Prazo') {
-            campoParcelasDiv.style.display = 'block';
-        } else {
-            campoParcelasDiv.style.display = 'none';
-        }
-    });
+        itensVendaBody.addEventListener('click', function (e) {
+            if (e.target.tagName === 'BUTTON') {
+                const index = e.target.dataset.index;
+                vendaItens.splice(index, 1);
+                atualizarTabelaVenda();
+            }
+        });
 
-    modoDevolucaoBtn.addEventListener('click', function() {
-        isReturnMode = !isReturnMode;
-        vendaItens = [];
-        removerClienteBtn.click();
-        atualizarTabelaVenda();
+        formaPagamentoSelect.addEventListener('change', function () {
+            if (this.value === 'A Prazo') {
+                campoParcelasDiv.style.display = 'block';
+            } else {
+                campoParcelasDiv.style.display = 'none';
+            }
+        });
 
-        if (isReturnMode) {
-            pdvTitle.textContent = "Devolução de Mercadoria";
-            totalHeader.innerHTML = '<h3 class="card-title text-center mb-0">Total a Devolver</h3>';
-            btnFinalizar.innerHTML = '<i class="fas fa-undo"></i> Processar Devolução';
-            formVenda.action = "{{ url_for('processar_devolucao') }}";
-            cardTotal.classList.add('modo-devolucao');
-            modoDevolucaoBtn.textContent = "Modo Venda";
-            modoDevolucaoBtn.classList.remove('btn-warning');
-            modoDevolucaoBtn.classList.add('btn-outline-success');
-            opcoesPagamento.style.display = 'none';
-        } else {
-            pdvTitle.textContent = "Ponto de Venda";
-            totalHeader.innerHTML = '<h3 class="card-title text-center mb-0">Total da Venda</h3>';
-            btnFinalizar.innerHTML = '<i class="fas fa-check-circle"></i> Finalizar Venda';
-            formVenda.action = "{{ url_for('finalizar_venda') }}";
-            cardTotal.classList.remove('modo-devolucao');
-            modoDevolucaoBtn.textContent = "Modo Devolução";
-            modoDevolucaoBtn.classList.remove('btn-outline-success');
-            modoDevolucaoBtn.classList.add('btn-warning');
-            opcoesPagamento.style.display = 'block';
-        }
-    });
-    
-    formVenda.addEventListener('submit', function(event) {
-        if (vendaItens.length === 0) {
-            alert("Adicione pelo menos um item à operação antes de finalizar.");
-            event.preventDefault();
-            return;
-        }
-        if (formaPagamentoSelect.value === 'A Prazo' && !clienteIdInput.value && !isReturnMode) {
-            alert("É necessário selecionar um cliente para vendas a prazo.");
-            event.preventDefault();
-            return;
-        }
-        setTimeout(() => {
+        modoDevolucaoBtn.addEventListener('click', function () {
+            isReturnMode = !isReturnMode;
             vendaItens = [];
             removerClienteBtn.click();
             atualizarTabelaVenda();
-        }, 1000);
+
+            if (isReturnMode) {
+                pdvTitle.textContent = "Devolução de Mercadoria";
+                totalHeader.innerHTML = '<h3 class="card-title text-center mb-0">Total a Devolver</h3>';
+                btnFinalizar.innerHTML = '<i class="fas fa-undo"></i> Processar Devolução';
+                formVenda.action = "{{ url_for('processar_devolucao') }}";
+                cardTotal.classList.add('modo-devolucao');
+                modoDevolucaoBtn.textContent = "Modo Venda";
+                modoDevolucaoBtn.classList.remove('btn-warning');
+                modoDevolucaoBtn.classList.add('btn-outline-success');
+                opcoesPagamento.style.display = 'none';
+            } else {
+                pdvTitle.textContent = "Ponto de Venda";
+                totalHeader.innerHTML = '<h3 class="card-title text-center mb-0">Total da Venda</h3>';
+                btnFinalizar.innerHTML = '<i class="fas fa-check-circle"></i> Finalizar Venda';
+                formVenda.action = "{{ url_for('finalizar_venda') }}";
+                cardTotal.classList.remove('modo-devolucao');
+                modoDevolucaoBtn.textContent = "Modo Devolução";
+                modoDevolucaoBtn.classList.remove('btn-outline-success');
+                modoDevolucaoBtn.classList.add('btn-warning');
+                opcoesPagamento.style.display = 'block';
+            }
+        });
+
+        formVenda.addEventListener('submit', function (event) {
+            if (vendaItens.length === 0) {
+                alert("Adicione pelo menos um item à operação antes de finalizar.");
+                event.preventDefault();
+                return;
+            }
+            if (formaPagamentoSelect.value === 'A Prazo' && !clienteIdInput.value && !isReturnMode) {
+                alert("É necessário selecionar um cliente para vendas a prazo.");
+                event.preventDefault();
+                return;
+            }
+            setTimeout(() => {
+                vendaItens = [];
+                removerClienteBtn.click();
+                atualizarTabelaVenda();
+            }, 1000);
+        });
     });
-});
 </script>
 {% endblock %}

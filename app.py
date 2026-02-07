@@ -764,5 +764,5 @@ with app.app_context():
     db.create_all()
 
 if __name__ == '__main__':
-    init_db()
+    # Remova a linha init_db() que estava aqui
     app.run(debug=True)
