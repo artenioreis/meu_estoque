@@ -7,64 +7,121 @@
     <title>{% block title %}Sistema de Estoque{% endblock %}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     {% block extra_styles %}{% endblock %}
 </head>
 
 <body>
+
     <div id="wrapper">
         <nav id="sidebar">
             <div class="sidebar-header d-flex justify-content-between align-items-center">
-                <h4 class="sidebar-title mb-0">Estoque</h4>
+                <div class="sidebar-logo-container" id="sidebarLogo" style="cursor: pointer;">
+                    <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Logo" class="sidebar-logo-img">
+                </div>
                 <button type="button" id="sidebarCollapse" class="btn btn-link text-white p-0">
                     <i class="fas fa-bars"></i>
                 </button>
             </div>
+
             <ul class="nav flex-column mb-auto">
-                <li class="nav-item"><a class="nav-link" href="{{ url_for('index') }}"><i class="fas fa-chart-line"></i>
-                        <span>Painel</span></a></li>
-                <li class="nav-item"><a class="nav-link" href="{{ url_for('pdv') }}"><i
-                            class="fas fa-shopping-cart"></i> <span>PDV</span></a></li>
-                <li class="nav-item"><a class="nav-link" href="{{ url_for('listar_produtos') }}"><i
-                            class="fas fa-boxes"></i> <span>Produtos</span></a></li>
-                <li class="nav-item"><a class="nav-link" href="{{ url_for('listar_contas') }}"><i
-                            class="fas fa-file-invoice-dollar"></i> <span>Contas a Pagar</span></a></li>
-                <li class="nav-item"><a class="nav-link" href="{{ url_for('listar_contas_receber') }}"><i
-                            class="fas fa-hand-holding-usd"></i> <span>Contas a Receber</span></a></li>
-                <li class="nav-item"><a class="nav-link" href="{{ url_for('listar_fornecedores') }}"><i
-                            class="fas fa-truck"></i> <span>Fornecedores</span></a></li>
-                <li class="nav-item"><a class="nav-link" href="{{ url_for('listar_clientes') }}"><i
-                            class="fas fa-users"></i> <span>Clientes</span></a></li>
-                <li class="nav-item"><a class="nav-link" href="{{ url_for('listar_utilizadores') }}"><i
-                            class="fas fa-user-cog"></i> <span>Usuários</span></a></li>
-                <li class="nav-item"><a class="nav-link" href="{{ url_for('relatorios') }}"><i class="fas fa-print"></i>
-                        <span>Relatórios</span></a></li>
-                <li class="nav-item"><a class="nav-link" href="{{ url_for('backup') }}"><i class="fas fa-database"></i>
-                        <span>Backup</span></a></li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('index') }}">
+                        <i class="fas fa-chart-line"></i> <span>Painel</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('pdv') }}">
+                        <i class="fas fa-shopping-cart"></i> <span>PDV</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('listar_produtos') }}">
+                        <i class="fas fa-boxes"></i> <span>Estoque</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('listar_contas') }}">
+                        <i class="fas fa-file-invoice-dollar"></i> <span>Contas a Pagar</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('listar_contas_receber') }}">
+                        <i class="fas fa-hand-holding-usd"></i> <span>Contas a Receber</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('listar_fornecedores') }}">
+                        <i class="fas fa-truck"></i> <span>Fornecedores</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('listar_clientes') }}">
+                        <i class="fas fa-users"></i> <span>Clientes</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('listar_utilizadores') }}">
+                        <i class="fas fa-user-cog"></i> <span>Usuários</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('relatorios') }}">
+                        <i class="fas fa-print"></i> <span>Relatórios</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('backup') }}">
+                        <i class="fas fa-database"></i> <span>Backup</span>
+                    </a>
+                </li>
+
                 {% if session.get('logged_in') %}
-                <li class="nav-item mt-3 border-top pt-2"><a class="nav-link text-danger"
-                        href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt"></i> <span>Sair</span></a></li>
+                <li class="nav-item mt-3 border-top pt-2">
+                    <a class="nav-link text-danger" href="{{ url_for('logout') }}">
+                        <i class="fas fa-sign-out-alt"></i> <span>Sair</span>
+                    </a>
+                </li>
                 {% endif %}
             </ul>
         </nav>
+
         <div id="content">
             <div class="container-fluid">
                 {% with messages = get_flashed_messages(with_categories=true) %}
                 {% if messages %}
                 {% for category, message in messages %}
-                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">{{ message }}<button
-                        type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
                 {% endfor %}
                 {% endif %}
                 {% endwith %}
+
                 {% block content %}{% endblock %}
             </div>
         </div>
     </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        document.getElementById('sidebarCollapse').addEventListener('click', function () {
-            document.getElementById('sidebar').classList.toggle('active');
+        document.addEventListener('DOMContentLoaded', function () {
+            const sidebar = document.getElementById('sidebar');
+            const sidebarCollapse = document.getElementById('sidebarCollapse');
+            const sidebarLogo = document.getElementById('sidebarLogo');
+
+            // Função para alternar o menu
+            const toggleSidebar = () => {
+                sidebar.classList.toggle('active');
+            };
+
+            // Clique no botão sanduíche
+            sidebarCollapse.addEventListener('click', toggleSidebar);
+
+            // Clique na Logo
+            sidebarLogo.addEventListener('click', toggleSidebar);
         });
     </script>
     {% block scripts %}{% endblock %}

@@ -1,6 +1,6 @@
 /* static/css/style.css */
 
-/* --- 1. CONFIGURAÇÕES GERAIS E BACKGROUND GLOBAL --- */
+/* --- 1. CONFIGURAÇÕES GERAIS E BACKGROUND --- */
 body {
     background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%) !important;
     background-attachment: fixed;
@@ -10,22 +10,7 @@ body {
     overflow-x: hidden;
 }
 
-/* --- 2. PÁGINA DE LOGIN --- */
-.login-page {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.login-logo {
-    max-width: 250px;
-    height: auto;
-    filter: drop-shadow(0px 4px 8px rgba(0, 0, 0, 0.2));
-    display: block;
-    margin: 0 auto;
-}
-
-/* --- 3. ESTRUTURA SIDEBAR (EXPANDIR/RETRAIR) --- */
+/* --- 2. ESTRUTURA SIDEBAR --- */
 #wrapper {
     display: flex;
     width: 100%;
@@ -37,26 +22,35 @@ body {
     max-width: 250px;
     background: #212529;
     color: #fff;
-    transition: all 0.3s ease;
+    transition: all 0.3s ease-in-out;
     min-height: 100vh;
     z-index: 1000;
     box-shadow: 2px 0 10px rgba(0, 0, 0, 0.3);
 }
 
+/* Estado Retraído */
 #sidebar.active {
-    min-width: 80px;
-    max-width: 80px;
+    min-width: 80px !important;
+    max-width: 80px !important;
 }
 
-#sidebar.active .sidebar-title,
+#sidebar.active .sidebar-logo-container,
 #sidebar.active .nav-link span {
-    display: none;
+    display: none !important;
+    /* Esconde logo e texto ao retrair */
 }
 
 #sidebar .sidebar-header {
-    padding: 20px;
+    padding: 15px;
     background: #1a1d20;
     border-bottom: 1px solid #343a40;
+}
+
+/* Estilo para a logo no menu */
+.sidebar-logo-img {
+    max-height: 40px;
+    width: auto;
+    filter: drop-shadow(0px 2px 4px rgba(0, 0, 0, 0.2));
 }
 
 #sidebar .nav-link {
@@ -86,13 +80,15 @@ body {
     width: 100%;
 }
 
-/* --- 4. ÁREA DE CONTEÚDO --- */
+/* --- 3. CONTEÚDO PRINCIPAL --- */
 #content {
     width: 100%;
     padding: 25px;
     transition: all 0.3s;
+    min-width: 0;
 }
 
+/* Estilo de Cartões */
 .card {
     border: none;
     border-radius: 12px;
@@ -101,12 +97,22 @@ body {
     backdrop-filter: blur(10px);
 }
 
-.card-header {
-    background-color: rgba(0, 0, 0, 0.02);
-    font-weight: 600;
+/* --- 4. LOGIN --- */
+.login-page {
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
-/* --- 5. RESPONSIVIDADE --- */
+.login-logo {
+    max-width: 250px;
+    height: auto;
+    filter: drop-shadow(0px 4px 8px rgba(0, 0, 0, 0.2));
+    display: block;
+    margin: 0 auto;
+}
+
+/* --- 5. RESPONSIVIDADE MOBILE --- */
 @media (max-width: 768px) {
     #sidebar {
         margin-left: -250px;
@@ -114,12 +120,7 @@ body {
 
     #sidebar.active {
         margin-left: 0;
-        min-width: 250px;
-        max-width: 250px;
-    }
-
-    #sidebar.active .sidebar-title,
-    #sidebar.active .nav-link span {
-        display: inline;
+        min-width: 250px !important;
+        max-width: 250px !important;
     }
 }
