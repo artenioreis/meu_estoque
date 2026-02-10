@@ -1,6 +1,7 @@
 # app.py
 from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify, send_file
-from models import db, Fornecedor, Produto, MovimentacaoEstoque, ContaPagar, Cliente, ContaReceber, XmlImportado, User
+# Importe Ticket aqui
+from models import db, Fornecedor, Produto, MovimentacaoEstoque, ContaPagar, Cliente, ContaReceber, XmlImportado, User, Ticket
 from datetime import datetime, date, timedelta
 from functools import wraps
 from sqlalchemy import func, or_
@@ -10,6 +11,7 @@ from dateutil.relativedelta import relativedelta
 import xml.etree.ElementTree as ET
 import os
 import shutil
+import uuid # Importante para gerar codigo unico
 
 # --- 1. CONFIGURAÇÃO DA APLICAÇÃO ---
 app = Flask(__name__)
@@ -258,15 +260,44 @@ def finalizar_venda():
     
     itens_venda = json.loads(venda_data_str)
     total_venda = sum(item['quantidade'] * item['preco_venda'] for item in itens_venda)
+    
+    # Lista para armazenar os tickets gerados nesta venda
+    tickets_gerados = []
+    
+    # ID unico de referencia para o grupo de tickets dessa venda
+    referencia_venda = uuid.uuid4().hex[:12].upper()
 
     for item in itens_venda:
         produto = db.session.get(Produto, item['id'])
         if not (produto and produto.quantidade_estoque >= item['quantidade']):
             flash(f'Estoque insuficiente para o produto {produto.nome if produto else "desconhecido"}.', 'danger')
             return redirect(url_for('pdv'))
+        
         produto.quantidade_estoque -= item['quantidade']
         movimento = MovimentacaoEstoque(produto_id=produto.id, tipo='saida', quantidade=item['quantidade'], observacao='Venda PDV', cliente_id=cliente_id)
         db.session.add(movimento)
+        
+        # --- GERAÇÃO DE TICKETS INDIVIDUAIS ---
+        # Gera 1 ticket para cada unidade do produto vendido
+        for _ in range(item['quantidade']):
+            # Gera um código curto e único, ex: AB34CD
+            codigo_ticket = uuid.uuid4().hex[:6].upper()
+            
+            # Garante unicidade (muito raro colidir com UUID, mas boa prática)
+            while Ticket.query.filter_by(codigo_unico=codigo_ticket).first():
+                codigo_ticket = uuid.uuid4().hex[:6].upper()
+
+            novo_ticket = Ticket(
+                codigo_unico=codigo_ticket,
+                produto_id=produto.id,
+                venda_ref=referencia_venda
+            )
+            db.session.add(novo_ticket)
+            # Adiciona um objeto auxiliar à lista para exibir no template sem precisar recarregar do DB
+            tickets_gerados.append({
+                'codigo': codigo_ticket,
+                'produto_nome': produto.nome
+            })
 
     if cliente_id:
         if forma_pagamento == 'A Prazo':
@@ -295,13 +326,16 @@ def finalizar_venda():
             db.session.add(nova_conta)
 
     db.session.commit()
-    return render_template('cupom.html', 
+    
+    # Substituímos o render 'cupom.html' por 'imprimir_tickets.html' que é mais completo para essa função
+    return render_template('imprimir_tickets.html', 
                            itens_venda=itens_venda, 
                            total_venda=total_venda, 
                            data_venda=datetime.now(), 
                            cliente=cliente, 
                            forma_pagamento=forma_pagamento,
-                           num_parcelas=int(request.form.get('parcelas', 0)))
+                           tickets=tickets_gerados,
+                           referencia=referencia_venda)
 
 @app.route('/processar_devolucao', methods=['POST'])
 @login_required
@@ -356,6 +390,50 @@ def processar_devolucao():
                            total_devolvido=total_devolvido, 
                            data_devolucao=datetime.now(), 
                            cliente=cliente)
+
+# --- ROTAS DE VALIDAÇÃO DE TICKETS (NOVO) ---
+
+@app.route('/validar_ticket', methods=['GET', 'POST'])
+@login_required
+def validar_ticket():
+    ticket_info = None
+    mensagem = None
+    tipo_msg = None
+
+    if request.method == 'POST':
+        codigo = request.form.get('codigo_ticket', '').strip().upper()
+        acao = request.form.get('acao') # 'verificar' ou 'baixar'
+
+        ticket = Ticket.query.filter_by(codigo_unico=codigo).first()
+
+        if not ticket:
+            mensagem = "Código de ticket não encontrado."
+            tipo_msg = "danger"
+        else:
+            produto = ticket.produto
+            
+            if acao == 'baixar':
+                if ticket.status == 'consumido':
+                    mensagem = f"ERRO: Este ticket já foi utilizado em {ticket.data_consumo.strftime('%d/%m/%Y %H:%M')}."
+                    tipo_msg = "danger"
+                    ticket_info = ticket
+                else:
+                    ticket.status = 'consumido'
+                    ticket.data_consumo = datetime.now()
+                    db.session.commit()
+                    mensagem = f"SUCESSO: Ticket para '{produto.nome}' baixado com sucesso! Pode entregar o produto."
+                    tipo_msg = "success"
+                    ticket_info = ticket
+            else: # Apenas verificar
+                ticket_info = ticket
+                if ticket.status == 'consumido':
+                    mensagem = f"ATENÇÃO: Este ticket já foi usado."
+                    tipo_msg = "warning"
+                else:
+                    mensagem = f"Ticket VÁLIDO para: {produto.nome}"
+                    tipo_msg = "info"
+
+    return render_template('validar_ticket.html', ticket=ticket_info, mensagem=mensagem, tipo_msg=tipo_msg)
 
 # --- ROTAS DE FORNECEDORES ---
 @app.route('/fornecedores')

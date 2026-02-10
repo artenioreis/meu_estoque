@@ -1,163 +1,206 @@
-<!doctype html>
-<html lang="pt-br">
+<!DOCTYPE html>
+<html lang="pt">
 
 <head>
-    <meta charset="utf-8">
-    <title>Cupom de Venda</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cupom e Tickets</title>
     <style>
-        /* Ajuste para compatibilidade com bobinas de 58mm e 80mm */
         body {
             font-family: 'Courier New', Courier, monospace;
-            width: 95%;
-            /* Largura relativa para se ajustar à bobina da impressora */
-            max-width: 300px;
-            /* Limite para não esticar em telas grandes */
+            width: 80mm;
+            /* Largura padrão de impressoras térmicas */
             margin: 0 auto;
-            padding: 5px;
+            background-color: #fff;
             color: #000;
         }
 
-        .header,
-        .footer {
+        .container {
+            padding: 5px;
+        }
+
+        .header {
             text-align: center;
+            border-bottom: 1px dashed #000;
+            padding-bottom: 5px;
+            margin-bottom: 5px;
         }
 
-        h2 {
-            margin: 0;
-            font-size: 1.1em;
-            text-transform: uppercase;
-        }
-
-        p {
-            margin: 3px 0;
-            font-size: 0.85em;
-        }
-
-        hr {
-            border: none;
-            border-top: 1px dashed #000;
+        .header h3 {
             margin: 5px 0;
         }
 
-        table {
-            width: 100%;
-            border-collapse: collapse;
+        .item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 3px;
+            font-size: 14px;
         }
 
-        th,
-        td {
-            padding: 2px 0;
-            font-size: 0.85em;
-            text-align: left;
-        }
-
-        .item-row td {
-            font-size: 0.8em;
-            vertical-align: top;
-        }
-
-        .total-row td {
-            font-weight: bold;
-            font-size: 1em;
+        .total {
+            border-top: 1px dashed #000;
+            margin-top: 5px;
             padding-top: 5px;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+            font-size: 16px;
         }
 
-        .align-right {
-            text-align: right;
+        .footer-info {
+            margin-top: 10px;
+            font-size: 12px;
+            text-align: center;
         }
 
-        /* Configurações específicas para a impressão */
+        /* ESTILO DOS TICKETS INDIVIDUAIS */
+        .ticket-separator {
+            border-top: 2px dashed #000;
+            margin: 15px 0;
+            text-align: center;
+            font-size: 12px;
+            padding: 5px 0;
+            font-weight: bold;
+        }
+
+        .individual-ticket {
+            border: 2px solid #000;
+            border-radius: 5px;
+            padding: 10px;
+            margin-bottom: 15px;
+            text-align: center;
+            page-break-inside: avoid;
+            /* Evita quebrar o ticket no meio da impressão */
+        }
+
+        .ticket-title {
+            font-size: 14px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .ticket-product {
+            font-size: 18px;
+            font-weight: bold;
+            margin: 5px 0;
+        }
+
+        .ticket-code {
+            font-size: 22px;
+            font-weight: bold;
+            background-color: #000;
+            color: #fff;
+            padding: 5px;
+            margin: 5px auto;
+            display: inline-block;
+            letter-spacing: 2px;
+        }
+
+        .ticket-footer {
+            font-size: 10px;
+            margin-top: 5px;
+        }
+
         @media print {
-            @page {
-                margin: 0;
-                /* Remove margens do navegador (data, título, etc) */
+            .no-print {
+                display: none;
             }
 
             body {
-                width: 100%;
+                background: none;
                 margin: 0;
-                padding: 2mm;
-                /* Pequeno respiro para não colar na serrilha */
-            }
-
-            button {
-                display: none;
             }
         }
 
-        button {
+        .btn-action {
+            display: block;
             width: 100%;
-            padding: 10px;
-            margin-top: 20px;
+            padding: 15px;
+            margin-bottom: 10px;
+            text-align: center;
+            text-decoration: none;
+            color: white;
+            font-family: sans-serif;
+            font-weight: bold;
+            border: none;
             cursor: pointer;
-            font-size: 1em;
-            background-color: #f0f0f0;
-            border: 1px solid #ccc;
+        }
+
+        .btn-print {
+            background-color: #28a745;
+        }
+
+        .btn-new {
+            background-color: #007bff;
         }
     </style>
 </head>
 
 <body>
-    <div class="header">
-        <h2>HOUSEHOT SWING CLUB</h2>
-        <p>R. Carlos Vasconcelos, 2206 - Aldeota, Fortaleza - CE.</p>
-        <p>Copyright By Cachorrão.</p>
-        <p><strong>CUPOM NÃO FISCAL</strong></p>
-        <p>{{ data_venda.strftime('%d/%m/%Y %H:%M:%S') }}</p>
-        <hr>
+    <div class="no-print">
+        <button onclick="window.print()" class="btn-action btn-print">🖨️ IMPRIMIR</button>
+        <a href="{{ url_for('pdv') }}" class="btn-action btn-new">➕ NOVA VENDA</a>
     </div>
 
-    {% if cliente %}
-    <div class="cliente-info">
-        <p><strong>CLIENTE:</strong> {{ cliente.nome }}</p>
-        <hr>
-    </div>
-    {% endif %}
+    <div class="container">
+        <div class="header">
+            <h3>CHEIRINHOS DA AURI</h3>
+            <p>HOUSEHOT SWING CLUB</p>
+            <p style="font-size: 12px;">{{ data_venda.strftime('%d/%m/%Y %H:%M') }}</p>
+            <p style="font-size: 12px;">REF: {{ referencia }}</p>
+        </div>
 
-    <table>
-        <thead>
-            <tr>
-                <th style="width: 45%;">Item</th>
-                <th style="width: 15%;">Qtd</th>
-                <th style="width: 20%;">Unit.</th>
-                <th class="align-right" style="width: 20%;">Sub</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for item in itens_venda %}
-            <tr class="item-row">
-                <td>{{ item.nome }}</td>
-                <td>{{ item.quantidade }}</td>
-                <td>{{ "%.2f"|format(item.preco_venda) }}</td>
-                <td class="align-right">{{ "%.2f"|format(item.quantidade * item.preco_venda) }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+        {% for item in itens_venda %}
+        <div class="item">
+            <span>{{ item.quantidade }}x {{ item.nome }}</span>
+            <span>R$ {{ "%.2f"|format(item.quantidade * item.preco_venda) }}</span>
+        </div>
+        {% endfor %}
 
-    <hr>
+        <div class="total">
+            <span>TOTAL</span>
+            <span>R$ {{ "%.2f"|format(total_venda) }}</span>
+        </div>
 
-    <table>
-        <tr class="total-row">
-            <td colspan="3">TOTAL</td>
-            <td class="align-right">R$ {{ "%.2f"|format(total_venda) }}</td>
-        </tr>
-        {% if forma_pagamento %}
-        <tr>
-            <td colspan="4" style="font-size: 0.85em; padding-top: 3px;">
-                Pagamento: {{ forma_pagamento }}
-            </td>
-        </tr>
+        <div class="footer-info">
+            <p>Pgto: {{ forma_pagamento }} {% if num_parcelas > 0 %}({{ num_parcelas }}x){% endif %}</p>
+            {% if cliente %}
+            <p>Cliente: {{ cliente.nome }}</p>
+            {% endif %}
+        </div>
+
+        <div style="text-align: center; margin-top: 10px; font-size: 10px;">
+            *** RECIBO NÃO FISCAL ***
+        </div>
+
+        {% if tickets %}
+        <div class="ticket-separator">
+            ✂️ DESTAQUE AS FICHAS ABAIXO ✂️
+        </div>
+
+        {% for ticket in tickets %}
+        <div class="individual-ticket">
+            <div class="ticket-title">CHEIRINHOS DA AURI</div>
+            <div style="font-size: 10px;">VALE-PRODUTO / FICHA</div>
+
+            <div class="ticket-product">{{ ticket.produto_nome }}</div>
+
+            <div class="ticket-code">{{ ticket.codigo }}</div>
+
+            <div class="ticket-footer">
+                Válido apenas para uma retirada.<br>
+                Entregue no balcão.
+            </div>
+        </div>
+        {% endfor %}
         {% endif %}
-    </table>
 
-    <hr>
-
-    <div class="footer">
-        <p>Obrigado pela preferência!</p>
     </div>
 
-    <button onclick="window.print()">Imprimir Cupom</button>
+    <script>
+        // Opcional: Imprimir automaticamente ao abrir
+        // window.onload = function() { window.print(); }
+    </script>
 </body>
 
 </html>

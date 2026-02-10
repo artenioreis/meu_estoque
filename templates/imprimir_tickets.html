@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="pt">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cupom e Tickets</title>
+    <style>
+        body {
+            font-family: 'Courier New', Courier, monospace;
+            width: 80mm;
+            margin: 0 auto;
+            background-color: #f8f9fa;
+        }
+
+        .container {
+            background-color: #fff;
+            padding: 10px;
+        }
+
+        .header {
+            text-align: center;
+            border-bottom: 1px dashed #000;
+            padding-bottom: 10px;
+            margin-bottom: 10px;
+        }
+
+        .item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+        }
+
+        .total {
+            border-top: 1px dashed #000;
+            margin-top: 10px;
+            padding-top: 10px;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        /* Estilos dos Tickets Individuais */
+        .ticket-separator {
+            border-top: 2px dashed #000;
+            margin: 20px 0;
+            text-align: center;
+            font-size: 10px;
+        }
+
+        .individual-ticket {
+            border: 2px solid #000;
+            border-radius: 5px;
+            padding: 10px;
+            margin-bottom: 10px;
+            text-align: center;
+            page-break-inside: avoid;
+        }
+
+        .ticket-code {
+            font-size: 24px;
+            font-weight: bold;
+            letter-spacing: 2px;
+            background: #eee;
+            padding: 5px;
+            margin: 5px 0;
+        }
+
+        .ticket-product {
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .ticket-footer {
+            font-size: 10px;
+        }
+
+        @media print {
+            body {
+                background: none;
+            }
+
+            .no-print {
+                display: none;
+            }
+        }
+
+        .btn-print {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            background-color: #28a745;
+            color: white;
+            text-align: center;
+            text-decoration: none;
+            margin-bottom: 20px;
+            border: none;
+            cursor: pointer;
+            font-family: sans-serif;
+            font-size: 16px;
+        }
+
+        .btn-new {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            background-color: #007bff;
+            color: white;
+            text-align: center;
+            text-decoration: none;
+            margin-bottom: 20px;
+            border: none;
+            cursor: pointer;
+            font-family: sans-serif;
+            font-size: 16px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="no-print">
+        <button onclick="window.print()" class="btn-print">Imprimir Tickets</button>
+        <a href="/pdv" class="btn-new">Nova Venda</a>
+    </div>
+
+    <div class="container">
+        <div class="header">
+            <h3>HOUSEHOT SWING CLUB
+                R. Carlos Vasconcelos, 2206 - Aldeota, Fortaleza - CE, 60115-044</h3>
+            <p>Cupom Não Fiscal</p>
+            <p>{{ data_venda.strftime('%d/%m/%Y %H:%M:%S') }}</p>
+        </div>
+
+        {% for item in itens_venda %}
+        <div class="item">
+            <span>{{ item.quantidade }}x {{ item.nome }}</span>
+            <span>R$ {{ "%.2f"|format(item.quantidade * item.preco_venda) }}</span>
+        </div>
+        {% endfor %}
+
+        <div class="total">
+            <span>TOTAL</span>
+            <span>R$ {{ "%.2f"|format(total_venda) }}</span>
+        </div>
+
+        <div style="margin-top: 10px; font-size: 12px;">
+            <p>Forma de Pagamento: {{ forma_pagamento }}</p>
+            {% if cliente %}
+            <p>Cliente: {{ cliente.nome }}</p>
+            {% endif %}
+        </div>
+
+        <div style="text-align: center; margin-top: 10px;">
+            *** FIM DO RECIBO ***
+        </div>
+
+        <div class="ticket-separator"> --- DESTAQUE OS TICKETS ABAIXO --- </div>
+
+        {% for ticket in tickets %}
+        <div class="individual-ticket">
+            <div style="font-size: 12px;">TICKET CONSUMO</div>
+            <div class="ticket-product">{{ ticket.produto_nome }}</div>
+            <div class="ticket-code">{{ ticket.codigo }}</div>
+            <div class="ticket-footer">Entregue no balcão para retirar</div>
+
+            <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data={{ ticket.codigo }}"
+                style="width: 80px; height: 80px; margin-top: 5px;">
+        </div>
+        {% endfor %}
+
+    </div>
+</body>
+
+</html>

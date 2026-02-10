@@ -50,6 +50,8 @@ class Produto(db.Model):
     data_vencimento = db.Column(db.Date, nullable=True)
     fornecedor_id = db.Column(db.Integer, db.ForeignKey('fornecedor.id'), nullable=False)
     movimentacoes = db.relationship('MovimentacaoEstoque', backref='produto', lazy=True)
+    # Novo relacionamento para os tickets
+    tickets = db.relationship('Ticket', backref='produto', lazy=True)
 
 class MovimentacaoEstoque(db.Model):
     __tablename__ = 'movimentacao_estoque'
@@ -97,3 +99,14 @@ class XmlImportado(db.Model):
     chave_nfe = db.Column(db.String(44), nullable=False, unique=True)
     nome_arquivo = db.Column(db.String(200), nullable=False)
     data_importacao = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+
+# --- NOVA CLASSE TICKET ---
+class Ticket(db.Model):
+    __tablename__ = 'ticket'
+    id = db.Column(db.Integer, primary_key=True)
+    codigo_unico = db.Column(db.String(20), unique=True, nullable=False)
+    produto_id = db.Column(db.Integer, db.ForeignKey('produto.id'), nullable=False)
+    data_geracao = db.Column(db.DateTime, default=datetime.utcnow)
+    status = db.Column(db.String(20), default='disponivel') # disponivel, consumido
+    data_consumo = db.Column(db.DateTime, nullable=True)
+    venda_ref = db.Column(db.String(50), nullable=True)

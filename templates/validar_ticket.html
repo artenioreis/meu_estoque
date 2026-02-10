@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+{% block title %}Validar Ficha{% endblock %}
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow border-0">
+                <div class="card-header bg-dark text-white text-center">
+                    <h4><i class="fas fa-ticket-alt"></i> Validar Ficha de Consumo</h4>
+                </div>
+                <div class="card-body bg-light">
+
+                    {% if mensagem %}
+                    <div class="alert alert-{{ tipo_msg }} text-center shadow-sm">
+                        <h4 class="mb-0">{{ mensagem }}</h4>
+                    </div>
+                    {% endif %}
+
+                    <form method="POST" action="{{ url_for('validar_ticket') }}">
+                        <div class="mb-4">
+                            <label for="codigo_ticket" class="form-label fw-bold">Código da Ficha:</label>
+                            <input type="text"
+                                class="form-control form-control-lg text-center text-uppercase fs-2 fw-bold"
+                                id="codigo_ticket" name="codigo_ticket" placeholder="Ex: A1B2C3" required autofocus
+                                autocomplete="off" value="{{ ticket.codigo_unico if ticket else '' }}"
+                                style="letter-spacing: 5px;">
+                        </div>
+
+                        {% if ticket and ticket.status == 'disponivel' and not mensagem.startswith('SUCESSO') %}
+                        <div class="alert alert-warning text-center border-2 border-warning">
+                            <small>PRODUTO LIBERADO:</small><br>
+                            <strong class="fs-3">{{ ticket.produto.nome }}</strong>
+                        </div>
+                        <button type="submit" name="acao" value="baixar" class="btn btn-success w-100 btn-lg py-3">
+                            <i class="fas fa-check-circle"></i> ENTREGAR PRODUTO (BAIXAR)
+                        </button>
+                        {% else %}
+                        <button type="submit" name="acao" value="verificar" class="btn btn-primary w-100 btn-lg py-3">
+                            <i class="fas fa-search"></i> VERIFICAR CÓDIGO
+                        </button>
+                        {% endif %}
+                    </form>
+
+                    <div class="mt-4 text-center">
+                        <a href="{{ url_for('validar_ticket') }}" class="btn btn-outline-secondary">Limpar / Nova
+                            Consulta</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        var input = document.getElementById("codigo_ticket");
+        input.focus();
+        input.select();
+    });
+</script>
+{% endblock %}
