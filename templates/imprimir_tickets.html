@@ -9,18 +9,22 @@
         body {
             font-family: 'Courier New', Courier, monospace;
             width: 80mm;
+            /* Largura para impressora térmica */
             margin: 0 auto;
-            background-color: #f8f9fa;
+            background-color: #fff;
+            color: #000;
+            font-weight: bold;
+            /* TUDO EM NEGRITO */
         }
 
         .container {
-            background-color: #fff;
-            padding: 10px;
+            padding: 5px;
         }
 
         .header {
             text-align: center;
-            border-bottom: 1px dashed #000;
+            border-bottom: 2px dashed #000;
+            /* Borda mais grossa */
             padding-bottom: 10px;
             margin-bottom: 10px;
         }
@@ -29,50 +33,72 @@
             display: flex;
             justify-content: space-between;
             margin-bottom: 5px;
+            font-size: 14px;
         }
 
         .total {
-            border-top: 1px dashed #000;
+            border-top: 2px dashed #000;
             margin-top: 10px;
             padding-top: 10px;
-            font-weight: bold;
+            font-size: 18px;
+            /* Total maior */
             display: flex;
             justify-content: space-between;
         }
 
-        /* Estilos dos Tickets Individuais */
+        /* ESTILOS DOS TICKETS INDIVIDUAIS */
         .ticket-separator {
-            border-top: 2px dashed #000;
+            border-top: 3px dashed #000;
             margin: 20px 0;
             text-align: center;
-            font-size: 10px;
+            font-size: 12px;
+            padding-top: 5px;
         }
 
         .individual-ticket {
-            border: 2px solid #000;
-            border-radius: 5px;
+            border: 4px solid #000;
+            /* Borda bem grossa */
+            border-radius: 0px;
             padding: 10px;
-            margin-bottom: 10px;
+            margin-bottom: 15px;
             text-align: center;
             page-break-inside: avoid;
+            background-color: #fff;
         }
 
-        .ticket-code {
-            font-size: 24px;
-            font-weight: bold;
-            letter-spacing: 2px;
-            background: #eee;
-            padding: 5px;
-            margin: 5px 0;
+        .ticket-header {
+            font-size: 14px;
+            text-transform: uppercase;
+            margin-bottom: 5px;
         }
 
         .ticket-product {
-            font-size: 18px;
-            font-weight: bold;
+            font-size: 20px;
+            /* Nome do produto bem grande */
+            text-transform: uppercase;
+            margin: 5px 0;
+        }
+
+        .ticket-qrcode {
+            margin: 10px auto;
+            display: block;
+        }
+
+        .ticket-code {
+            font-size: 28px;
+            /* Código de texto GIGANTE */
+            background: #000;
+            color: #fff;
+            padding: 5px 10px;
+            margin: 5px auto;
+            display: inline-block;
+            letter-spacing: 3px;
+            font-family: sans-serif;
         }
 
         .ticket-footer {
-            font-size: 10px;
+            font-size: 11px;
+            margin-top: 5px;
         }
 
         @media print {
@@ -83,52 +109,58 @@
             .no-print {
                 display: none;
             }
+
+            /* Forçar impressão de background (para o fundo preto do código e QR code nítido) */
+            * {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
         }
 
         .btn-print {
             display: block;
             width: 100%;
-            padding: 10px;
-            background-color: #28a745;
+            padding: 15px;
+            background-color: #000;
             color: white;
             text-align: center;
             text-decoration: none;
-            margin-bottom: 20px;
+            margin-bottom: 10px;
             border: none;
             cursor: pointer;
-            font-family: sans-serif;
-            font-size: 16px;
+            font-size: 18px;
+            font-weight: bold;
         }
 
         .btn-new {
             display: block;
             width: 100%;
-            padding: 10px;
-            background-color: #007bff;
+            padding: 15px;
+            background-color: #444;
             color: white;
             text-align: center;
             text-decoration: none;
             margin-bottom: 20px;
             border: none;
             cursor: pointer;
-            font-family: sans-serif;
             font-size: 16px;
+            font-weight: bold;
         }
     </style>
 </head>
 
 <body>
     <div class="no-print">
-        <button onclick="window.print()" class="btn-print">Imprimir Tickets</button>
-        <a href="/pdv" class="btn-new">Nova Venda</a>
+        <button onclick="window.print()" class="btn-print">IMPRIMIR TICKETS</button>
+        <a href="{{ url_for('pdv') }}" class="btn-new">NOVA VENDA</a>
     </div>
 
     <div class="container">
         <div class="header">
-            <h3>HOUSEHOT SWING CLUB
-                R. Carlos Vasconcelos, 2206 - Aldeota, Fortaleza - CE, 60115-044</h3>
-            <p>Cupom Não Fiscal</p>
-            <p>{{ data_venda.strftime('%d/%m/%Y %H:%M:%S') }}</p>
+            <h3>HOUSEHOT SWING CLUB</h3>
+            <p>R. Carlos Vasconcelos, 2206
+                Aldeota, Fortaleza - CE, 60115-044</p>
+            <p style="font-size: 12px;">{{ data_venda.strftime('%d/%m/%Y %H:%M') }}</p>
         </div>
 
         {% for item in itens_venda %}
@@ -144,29 +176,34 @@
         </div>
 
         <div style="margin-top: 10px; font-size: 12px;">
-            <p>Forma de Pagamento: {{ forma_pagamento }}</p>
+            <p>Pagamento: {{ forma_pagamento }}</p>
             {% if cliente %}
             <p>Cliente: {{ cliente.nome }}</p>
             {% endif %}
         </div>
 
         <div style="text-align: center; margin-top: 10px;">
-            *** FIM DO RECIBO ***
+            *** CONFERÊNCIA ***
         </div>
 
-        <div class="ticket-separator"> --- DESTAQUE OS TICKETS ABAIXO --- </div>
+        {% if tickets %}
+        <div class="ticket-separator"> --- DESTAQUE AS FICHAS --- </div>
 
         {% for ticket in tickets %}
         <div class="individual-ticket">
-            <div style="font-size: 12px;">TICKET CONSUMO</div>
+            <div class="ticket-header">VALE-PRODUTO</div>
             <div class="ticket-product">{{ ticket.produto_nome }}</div>
-            <div class="ticket-code">{{ ticket.codigo }}</div>
-            <div class="ticket-footer">Entregue no balcão para retirar</div>
 
-            <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data={{ ticket.codigo }}"
-                style="width: 80px; height: 80px; margin-top: 5px;">
+            <img class="ticket-qrcode"
+                src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data={{ ticket.codigo }}" alt="QR Code"
+                width="100" height="100">
+
+            <div class="ticket-code">{{ ticket.codigo }}</div>
+
+            <div class="ticket-footer">ENTREGUE NO BALCÃO</div>
         </div>
         {% endfor %}
+        {% endif %}
 
     </div>
 </body>

@@ -64,40 +64,41 @@
         }
 
         .individual-ticket {
-            border: 2px solid #000;
+            border: 3px solid #000;
+            /* Borda mais grossa */
             border-radius: 5px;
             padding: 10px;
             margin-bottom: 15px;
             text-align: center;
             page-break-inside: avoid;
-            /* Evita quebrar o ticket no meio da impressão */
+            font-weight: bold;
+            /* TODO O TEXTO DO TICKET EM NEGRITO */
         }
 
         .ticket-title {
             font-size: 14px;
-            font-weight: bold;
             text-transform: uppercase;
         }
 
         .ticket-product {
             font-size: 18px;
-            font-weight: bold;
             margin: 5px 0;
+            text-transform: uppercase;
         }
 
         .ticket-code {
-            font-size: 22px;
-            font-weight: bold;
+            font-size: 24px;
+            /* Código ainda maior */
             background-color: #000;
             color: #fff;
             padding: 5px;
-            margin: 5px auto;
+            margin: 8px auto;
             display: inline-block;
-            letter-spacing: 2px;
+            letter-spacing: 3px;
         }
 
         .ticket-footer {
-            font-size: 10px;
+            font-size: 11px;
             margin-top: 5px;
         }
 
@@ -188,19 +189,14 @@
             <div class="ticket-code">{{ ticket.codigo }}</div>
 
             <div class="ticket-footer">
-                Válido apenas para uma retirada.<br>
-                Entregue no balcão.
+                VÁLIDO PARA UMA RETIRADA.<br>
+                ENTREGUE NO BALCÃO.
             </div>
         </div>
         {% endfor %}
         {% endif %}
 
     </div>
-
-    <script>
-        // Opcional: Imprimir automaticamente ao abrir
-        // window.onload = function() { window.print(); }
-    </script>
 </body>
 
 </html>
