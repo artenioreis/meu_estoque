@@ -1,5 +1,28 @@
 {% extends 'base.html' %}
+
 {% block title %}Validar Ficha{% endblock %}
+
+{% block extra_styles %}
+<style>
+    #reader {
+        width: 100%;
+        border-radius: 10px;
+        overflow: hidden;
+        margin-bottom: 20px;
+        display: none;
+        /* Escondido por padrão */
+        background: #000;
+    }
+
+    #reader video {
+        object-fit: cover;
+        width: 100% !important;
+        height: auto !important;
+        border-radius: 10px;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container mt-5">
     <div class="row justify-content-center">
@@ -16,7 +39,13 @@
                     </div>
                     {% endif %}
 
-                    <form method="POST" action="{{ url_for('validar_ticket') }}">
+                    <div id="reader"></div>
+
+                    <button type="button" id="btn-scan" class="btn btn-info w-100 btn-lg mb-4 text-white fw-bold">
+                        <i class="fas fa-camera"></i> LER QR CODE COM CÂMERA
+                    </button>
+
+                    <form method="POST" action="{{ url_for('validar_ticket') }}" id="form-validar">
                         <div class="mb-4">
                             <label for="codigo_ticket" class="form-label fw-bold">Código da Ficha:</label>
                             <input type="text"
@@ -34,27 +63,103 @@
                         <button type="submit" name="acao" value="baixar" class="btn btn-success w-100 btn-lg py-3">
                             <i class="fas fa-check-circle"></i> ENTREGAR PRODUTO (BAIXAR)
                         </button>
+
+                        <div class="mt-3 text-center">
+                            <a href="{{ url_for('validar_ticket') }}" class="btn btn-outline-secondary">Cancelar</a>
+                        </div>
+
                         {% else %}
-                        <button type="submit" name="acao" value="verificar" class="btn btn-primary w-100 btn-lg py-3">
+                        <button type="submit" name="acao" value="verificar" class="btn btn-primary w-100 btn-lg py-3"
+                            id="btn-verificar">
                             <i class="fas fa-search"></i> VERIFICAR CÓDIGO
                         </button>
                         {% endif %}
                     </form>
 
+                    {% if not ticket or ticket.status != 'disponivel' %}
                     <div class="mt-4 text-center">
-                        <a href="{{ url_for('validar_ticket') }}" class="btn btn-outline-secondary">Limpar / Nova
-                            Consulta</a>
+                        <a href="{{ url_for('validar_ticket') }}" class="btn btn-outline-secondary">Limpar Tela</a>
                     </div>
+                    {% endif %}
                 </div>
             </div>
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+
 <script>
     document.addEventListener("DOMContentLoaded", function () {
-        var input = document.getElementById("codigo_ticket");
-        input.focus();
-        input.select();
+        // Foca no input ao carregar
+        const inputCodigo = document.getElementById("codigo_ticket");
+        if (inputCodigo) {
+            inputCodigo.focus();
+            // Move cursor para o final se tiver valor
+            const val = inputCodigo.value;
+            inputCodigo.value = '';
+            inputCodigo.value = val;
+        }
+
+        // Configuração do Leitor de QR Code
+        const btnScan = document.getElementById('btn-scan');
+        const readerDiv = document.getElementById('reader');
+        let html5QrcodeScanner = null;
+
+        btnScan.addEventListener('click', function () {
+            if (readerDiv.style.display === 'none' || readerDiv.style.display === '') {
+                // Abrir Câmera
+                readerDiv.style.display = 'block';
+                btnScan.innerHTML = '<i class="fas fa-times"></i> FECHAR CÂMERA';
+                btnScan.classList.remove('btn-info');
+                btnScan.classList.add('btn-danger');
+
+                html5QrcodeScanner = new Html5Qrcode("reader");
+                const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+
+                // Prefere a câmera traseira
+                html5QrcodeScanner.start({ facingMode: "environment" }, config, onScanSuccess)
+                    .catch(err => {
+                        console.log("Erro ao iniciar câmera", err);
+                        alert("Não foi possível acessar a câmera. Verifique as permissões.");
+                    });
+
+            } else {
+                // Fechar Câmera
+                stopScanner();
+            }
+        });
+
+        function onScanSuccess(decodedText, decodedResult) {
+            // Sucesso na leitura
+            console.log(`Código lido = ${decodedText}`, decodedResult);
+
+            // Preenche o input
+            inputCodigo.value = decodedText;
+
+            // Para o scanner
+            stopScanner();
+
+            // Submete o formulário automaticamente para verificar
+            document.getElementById('btn-verificar').click();
+        }
+
+        function stopScanner() {
+            if (html5QrcodeScanner) {
+                html5QrcodeScanner.stop().then((ignore) => {
+                    // QR Code scanning stopped.
+                    readerDiv.style.display = 'none';
+                    btnScan.innerHTML = '<i class="fas fa-camera"></i> LER QR CODE COM CÂMERA';
+                    btnScan.classList.remove('btn-danger');
+                    btnScan.classList.add('btn-info');
+                    inputCodigo.focus();
+                }).catch((err) => {
+                    console.log("Erro ao parar scanner", err);
+                });
+            }
+        }
     });
 </script>
 {% endblock %}

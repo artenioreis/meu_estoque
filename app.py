@@ -842,5 +842,6 @@ with app.app_context():
     db.create_all()
 
 if __name__ == '__main__':
-    # Remova a linha init_db() que estava aqui
-    app.run(debug=True)
+    # 'host=0.0.0.0' libera o acesso para outros dispositivos na mesma rede
+    # 'port=5000' define a porta (padrão do Flask)
+    app.run(debug=True, host='0.0.0.0', port=5000)
